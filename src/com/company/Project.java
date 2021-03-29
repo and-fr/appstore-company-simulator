@@ -38,6 +38,7 @@ public class Project {
 
         // calculates price for project (num days * 8 hours * pay4hour + 10%)
         price = (Double.valueOf(getTotalWorkDaysNeeded()) * 8 * payForHour) * 1.1;
+        price = (double) (Math.round(price * 100.0) / 100);
 
         // by default payment delay is dependent on complexity of project and its number of techs
         // 1 tech - 7 days, 2,3 - 14 days, more - 21 days
@@ -90,7 +91,40 @@ public class Project {
     }
 
 
+    Integer getTotalWorkDaysDone(){
+        int days = 0;
+        for (Technology tech:technologies)
+            days += tech.workDaysDone;
+        return days;
+    }
+
+
     Integer getNumberOfTechs(){
         return technologies.size();
     }
+
+
+    public Boolean isCodeCompleted(){
+        for (Technology tech:technologies)
+            if (tech.workDaysDone < tech.workDaysNeeded)
+                return false;
+        return true;
+    }
+
+
+    public Boolean isTestCompleted(){
+        for (Technology tech:technologies)
+            if (tech.testDaysDone < tech.workDaysDone)
+                return false;
+        return true;
+    }
+
+
+    public Boolean hasMobileTech(){
+        for (Technology tech:technologies)
+            if (tech.name.equals("Mobile"))
+                return true;
+        return false;
+    }
+
 }

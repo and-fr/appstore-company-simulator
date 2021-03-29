@@ -12,7 +12,7 @@ public class Company {
     private Double money = 200.0;
     private List<Contractor> contractors = new ArrayList<>();
     private List<Person> employees = new ArrayList<>();
-    private List<Project> projects = new ArrayList<>();
+    public List<Project> projects = new ArrayList<>();
     private Boolean hasOffice = false;
 
 
@@ -22,12 +22,11 @@ public class Company {
     public Integer getEmployeesCount(){
         return employees.size();
     }
-    public Integer getProjectsCount(){
-        return projects.size();
-    }
+    public List<Project> getProjects(){ return projects; }
 
 
     public void addEmployee(Person employee){ employees.add(employee); }
+    public void addProject(Project project){ projects.add(project); }
     public void setHasOffice(Boolean hasOffice) { this.hasOffice = hasOffice; }
 
 }

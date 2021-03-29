@@ -5,6 +5,7 @@ public class Technology {
     String name;
     Integer workDaysNeeded = 0;
     Integer workDaysDone = 0;
+    Integer testDaysDone = 0;
 
     public static String[] technologyNames = { "Front-End", "Backend", "Database", "Mobile", "Wordpress", "Prestashop" };
 

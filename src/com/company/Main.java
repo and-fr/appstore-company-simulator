@@ -2,32 +2,46 @@ package com.company;
 
 import com.company.people.Client;
 
+import java.util.Scanner;
+
 public class Main {
 
     public static void main(String[] args) {
 
         Game game = new Game();
 
-        game.showSummary();
+        while(true){
+            game.showSummary();
+            game.showMainMenu();
 
-
-        Project prj;
-
-        for (int i = 1; i <= 100; i++) {
-            prj = new Project(new Client());
-
-            System.out.println("#" + i);
-            System.out.println("name: " + prj.name);
-            System.out.println("techs:");
-            for (Technology tech : prj.technologies) {
-                System.out.println(tech.name + " " + tech.workDaysNeeded);
+            switch (game.getKey()){
+                case '0':
+                    return;
+                case '1': // check available projects
+                    game.optionAvailableProjects();
+                    break;
+                case '2': // search for clients
+                    game.optionSearchForClients();
+                    break;
+                case '3': // programming
+                    game.optionProgramming();
+                    break;
+                case '4': // testing
+                    game.optionTesting();
+                    break;
+                case '5': // return project
+                    game.optionReturnProject();
+                    break;
+                case '6': // hire/fire employee
+                    break;
+                case '7': // hire contractor
+                    break;
+                case '8': // company tasks
+                    break;
+                case '9': // next day
+                    game.advanceNextDay();
+                    break;
             }
-            System.out.println("price: " + prj.price);
-            System.out.println("penalty: " + prj.penalty);
-            System.out.println("payment due: " + prj.paymentDue);
-            System.out.println("payment never: " + prj.paymentNever);
-            System.out.println("payment delay days: " + prj.paymentDelayDays);
-            System.out.println();
         }
 
     }
