@@ -1,8 +1,7 @@
 package com.company;
 
-import com.company.people.Client;
+import com.company.assets.Tool;
 
-import java.util.Scanner;
 
 public class Main {
 
@@ -14,7 +13,7 @@ public class Main {
             game.showSummary();
             game.showMainMenu();
 
-            switch (game.getKey()){
+            switch (Tool.getKey()){
                 case '0':
                     return;
                 case '1': // check available projects

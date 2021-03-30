@@ -1,112 +1,75 @@
 package com.company;
 
-
+import com.company.assets.Conf;
+import com.company.assets.Lang;
+import com.company.assets.Tool;
+import com.company.things.Company;
+import com.company.things.Project;
+import com.company.things.Technology;
 import com.company.people.Client;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
-import java.util.concurrent.ThreadLocalRandom;
 
 
 public class Game {
 
-    final String GAME_WELCOME_MESSAGE = """
-        # IT SOFTWARE COMPANY SIMULATOR
-        #
-        #\tYou start with some amount of money. You have no office, no employees, no clients.
-        #\tYou know how to program in Java, have some knowledge of databases, and you can do some front-end work.
-        #\tYou can also configure a webpage using Wordpress, and implement e-commerce solution using Prestashop.
-        #\tYou can't create mobile apps. For that you need to make a deal with a contractor, hire an employee, or avoid such projects.
-        """;
+    // FIELDS
 
-    final LocalDate START_DATE = LocalDate.of(2020, 1, 1);
-    LocalDate currentDate = START_DATE;
+    private LocalDate currentDate;
+    private final List<Client> clients = new ArrayList<>();
+    private final List<Project> projects = new ArrayList<>();
+    private final Company company = new Company();
+    private Integer searchDaysForClients = 0;
 
-    List<Client> clients = new ArrayList<>();
-    List<Project> projects = new ArrayList<>();
 
-    Company company = new Company();
-
-    Integer searchDaysForClients = 0;
-
+    // CONSTRUCTORS
 
     public Game(){
-        showWelcomeMessage();
+        currentDate = Conf.START_DATE;
         generateClients();
         generateInitialProjects();
+        System.out.println(Lang.GAME_WELCOME_MESSAGE);
     }
 
 
-    void showWelcomeMessage(){
-        System.out.println(GAME_WELCOME_MESSAGE);
-    }
-
-
-    public Long getDayNumber() { return ChronoUnit.DAYS.between(START_DATE, currentDate) + 1; }
-
+    // PUBLIC METHODS
 
     public void showSummary(){
-        String hasOffice = company.getHasOffice() ? "yes" : "no";
-
-        String summary = "DAY " + getDayNumber() + " (" + currentDate.getDayOfWeek() + ") |  MONEY: " + company.getMoney() +
-                " | PROJECTS: " + company.projects.size() + " | OFFICE: " + hasOffice + " | EMPLOYEES: " + company.getEmployeesCount() +
-                " | CONTRACTORS: " + company.getContractorsCount();
-
-        StringBuilder line = new StringBuilder();
-        line.append("-".repeat(summary.length()));
-
-        System.out.println();
-        System.out.println(line);
-        System.out.println(summary);
-        System.out.println(line);
-        System.out.println();
-    }
-
-
-    private void generateClients(){
-        for (int i = 0; i < 10; i++)
-            clients.add(new Client());
-    }
-
-
-    private void generateInitialProjects(){
-        int clientNum = randInt(0, clients.size() - 1);
-
-        for (int i = 0; i < 3; i++)
-            projects.add(new Project(clients.get(clientNum)));
-    }
-
-
-
-    private void addNewProject(){
-        if (projects.size() >= 9)
-            projects.remove(0);
-
-        int clientNum = randInt(0, clients.size() - 1);
-        projects.add(new Project(clients.get(clientNum)));
+        StringBuilder summary = new StringBuilder();
+        summary.append("DAY ").append(getDayNumber()).append(" (").append(currentDate.getDayOfWeek()).append(") | ");
+        summary.append("MONEY: ").append(company.getMoney()).append(" | ");
+        summary.append("PROJECTS: ").append(company.getProjects().size()).append(" | ");
+        summary.append("OFFICE: ").append(company.getHasOffice() ? "yes" : "no").append(" | ");
+        summary.append("EMPLOYEES: ").append(company.getEmployees().size()).append(" | ");
+        summary.append("CONTRACTORS: ").append(company.getContractors().size()).append("\n");
+        StringBuilder line = new StringBuilder().append("-".repeat(summary.length())).append("\n");
+        System.out.println(line + String.valueOf(summary) + line);
     }
 
 
     public void showMainMenu(){
-        System.out.println("Choose today's action:\n");
-        System.out.println("""
-                \t1. Take a new project             6. Hire/Fire an employee
-                \t2. Search for clients             7. Hire a contractor
-                \t3. Programming                    8. Company tasks
-                \t4. Testing                        9. Next day
-                \t5. Return project to client       0. Exit
-                """);
-        System.out.println("[Type a number and press Enter]");
+        System.out.print(Lang.MAIN_MENU);
+    }
+
+
+    private void addNewProject(){
+        if (projects.size() >= Conf.MAX_AVAILABLE_PROJECTS)
+            projects.remove(0);
+        int clientNum = Tool.randInt(0, clients.size() - 1);
+        projects.add(new Project(clients.get(clientNum)));
     }
 
 
     public void optionAvailableProjects(){
 
-        if (company.projects.size() >= 9){
-            System.out.println("(INFO) Your company can handle only 9 projects at a time. Finish some current projects first.");
+        if (company.getProjects().size() >= Conf.MAX_COMPANY_PROJECTS_AT_A_TIME){
+            System.out.println(
+                "(INFO) Your company can handle only " + Conf.MAX_COMPANY_PROJECTS_AT_A_TIME +
+                " projects at a time. Finish some current projects first."
+            );
             return;
         }
 
@@ -115,9 +78,9 @@ public class Game {
 
         if (projects.size() > 0) {
             for (Project pr : projects) {
-                menu.append("\t").append(++count).append(". | ").append(pr.name).append(" | price: ").append(pr.price).append(" | technologies: ");
-                for (Technology tech : pr.technologies)
-                    menu.append(tech.name).append(" ");
+                menu.append("\t").append(++count).append(". | ").append(pr.getName()).append(" from ").append(pr.getClient().getName()).append(" | price: ").append(pr.getPrice()).append(" | technologies: ");
+                for (Technology tech : pr.getTechnologies())
+                    menu.append(tech.getName()).append(" ");
                 menu.append("| work days: ").append(pr.getTotalWorkDaysNeeded()).append("\n");
             }
         } else {
@@ -128,10 +91,10 @@ public class Game {
         System.out.print(menu);
 
         while(true){
-            char ch = getKey();
+            char ch = Tool.getKey();
             if (ch == '0') break;
 
-            // if player selects a valid project then the project is added to company's project
+            // if player selects a valid project then the project is added to company's projects
             int selectedProjectNum = Character.getNumericValue(ch);
             if (selectedProjectNum > 0 && selectedProjectNum <= projects.size()){
                 company.addProject(projects.get(selectedProjectNum - 1));
@@ -139,21 +102,17 @@ public class Game {
                 advanceNextDay();
                 break;
             }
-
-            System.out.println("[Not a valid option]" + selectedProjectNum);
         }
     }
 
 
     public void optionSearchForClients(){
         advanceNextDay();
-
         if (searchDaysForClients < 4){
             searchDaysForClients += 1;
             System.out.println("(INFO) Since a new project was available you've searched for client for days: " + searchDaysForClients);
             return;
         }
-
         searchDaysForClients = 0;
         addNewProject();
         System.out.println("(INFO) Your search has finally payed off. A new project is available.");
@@ -162,60 +121,61 @@ public class Game {
 
     public void optionProgramming(){
 
-        if (company.projects.size() == 0){
+        if (company.getProjects().size() == 0){
             System.out.println("(INFO) Your company has no any projects.");
             return;
         }
 
-        showAllProjects();
-        System.out.println("[Type a number of a project you would like to write a code for. Or type 0 for exit. Then press Enter.]");
+        System.out.println("COMPANY'S PROJECTS:\n");
+        company.showAllProjects();
+        System.out.println("[Type a number of a project you would like to CODE for. Or type 0 for exit. Then press Enter.]");
 
         Project prj;
         while (true){
-            char ch = getKey();
+            char ch = Tool.getKey();
             if (ch == '0') return;
 
             int selectedProjectNum = Character.getNumericValue(ch);
-            if (selectedProjectNum >= 1 && selectedProjectNum <= company.projects.size()){
-                prj = company.projects.get(selectedProjectNum - 1);
+            if (selectedProjectNum >= 1 && selectedProjectNum <= company.getProjects().size()){
+                prj = company.getProjects().get(selectedProjectNum - 1);
 
                 if (prj.isCodeCompleted()){
-                    System.out.println("(INFO) #" + selectedProjectNum + "project has code already completed.");
+                    System.out.println("(INFO) #" + selectedProjectNum + " project has code already completed.");
                     continue;
                 }
 
-                System.out.println("Chosen project: #" + selectedProjectNum + " " + prj.name);
+                System.out.println("Chosen project: #" + selectedProjectNum + " " + prj.getName());
                 System.out.print("Project's technologies:\n\t");
                 int count = 0;
-                for (Technology tech:prj.technologies) {
-                    System.out.print(++count + ". " + tech.name + "   ");
+                for (Technology tech:prj.getTechnologies()) {
+                    System.out.print(++count + ". " + tech.getName() + "   ");
                 }
                 System.out.println("\n");
                 System.out.println("[Type a number of a technology to write code for. Type 0 to cancel. Then Press Enter.]");
 
                 while(true){
-                    ch = getKey();
+                    ch = Tool.getKey();
                     if (ch == '0') return;
 
                     int selectedTechNum = Character.getNumericValue(ch);
-                    if (selectedTechNum >= 1 && selectedTechNum <= prj.technologies.size()){
+                    if (selectedTechNum >= 1 && selectedTechNum <= prj.getTechnologies().size()){
 
-                        Technology tech = prj.technologies.get(selectedTechNum - 1);
+                        Technology tech = prj.getTechnologies().get(selectedTechNum - 1);
 
                         // check if tech is Mobile - player can't work on this, need to hire someone else
-                        if (tech.name.equals("Mobile")){
+                        if (tech.getName().equals("Mobile")){
                             System.out.println("(INFO) You can't work on Mobile technology. You need to get a contractor or hire a programmer.");
                             continue;
                         }
 
                         // check if tech is already completed, no more coding needed
-                        if (tech.workDaysDone >= tech.workDaysNeeded) {
+                        if (tech.getWorkDaysDone() >= tech.getWorkDaysNeeded()) {
                             System.out.println("(INFO) The code for this technology is already complete.");
                             continue;
                         }
 
-                        tech.workDaysDone += 1;
-                        System.out.println("(INFO) You spent one day on coding for " + tech.name + " tech for " + prj.name + " project.");
+                        tech.setWorkDaysDonePlus(1);
+                        System.out.println("(INFO) You spent one day on CODING for " + tech.getName() + " tech for " + prj.getName() + " project.");
                         advanceNextDay();
                         return;
                     }
@@ -227,47 +187,77 @@ public class Game {
 
     public void optionTesting(){
 
-        if (company.projects.size() == 0){
+        if (company.getProjects().size() == 0){
             System.out.println("(INFO) Your company has no any projects.");
             return;
         }
 
+        System.out.println("COMPANY'S PROJECTS:\n");
+        company.showAllProjects();
+        System.out.println("[Type a number of a project you would like to TEST a code for. Type 0 for cancel. Then press Enter.]");
+
+        Project prj;
+        while (true){
+            char ch = Tool.getKey();
+            if (ch == '0') return;
+
+            int selectedProjectNum = Character.getNumericValue(ch);
+            if (selectedProjectNum >= 1 && selectedProjectNum <= company.getProjects().size()){
+                prj = company.getProjects().get(selectedProjectNum - 1);
+
+                if (prj.isTestCompleted()){
+                    System.out.println("(INFO) #" + selectedProjectNum + " project has tests already completed for all its written code.");
+                    continue;
+                }
+
+                System.out.println("Chosen project: #" + selectedProjectNum + " " + prj.getName());
+                System.out.print("Project's technologies:\n\t");
+                int count = 0;
+                for (Technology tech:prj.getTechnologies()) {
+                    System.out.print(++count + ". " + tech.getName() + "   ");
+                }
+                System.out.println("\n");
+                System.out.println("[Type a number of a technology to TEST code for. Type 0 to cancel. Then Press Enter.]");
+
+                while(true){
+                    ch = Tool.getKey();
+                    if (ch == '0') return;
+
+                    int selectedTechNum = Character.getNumericValue(ch);
+                    if (selectedTechNum >= 1 && selectedTechNum <= prj.getTechnologies().size()){
+
+                        Technology tech = prj.getTechnologies().get(selectedTechNum - 1);
+
+                        // check if tech is Mobile - player can't work on this, need to hire someone else
+                        if (tech.getName().equals("Mobile")){
+                            System.out.println("(INFO) You can't work on Mobile technology. You need to get a contractor or hire a programmer.");
+                            continue;
+                        }
+
+                        // check if tests are equal to number of work days
+                        if (tech.getTestDaysDone() >= tech.getWorkDaysDone()) {
+                            System.out.println("(INFO) The code for this technology has been already tested.");
+                            continue;
+                        }
+
+                        tech.setTestDaysDonePlus(1);
+                        System.out.println("(INFO) You spent one day on TESTING the code for " + tech.getName() + " tech for " + prj.getName() + " project.");
+                        advanceNextDay();
+                        return;
+                    }
+                }
+            }
+        }
     }
 
 
     public void optionReturnProject(){
 
-        if (company.projects.size() == 0){
+        if (company.getProjects().size() == 0){
             System.out.println("(INFO) Your company has no any projects.");
             return;
         }
 
-    }
-
-
-
-    private void showAllProjects(){
-
-        System.out.println("COMPANY'S PROJECTS:\n");
-
-        int count = 0;
-        for (Project prj:company.getProjects()) {
-            count++;
-
-            System.out.println(
-                    "\t" + count + ". | " + prj.name + " from " + prj.client.name + " | price: " + prj.price
-            );
-            System.out.print("\t\t techs: ");
-            for (Technology tech : prj.technologies) {
-                System.out.print(
-                        tech.name + " (code " + tech.workDaysDone + "/" + tech.workDaysNeeded
-                                + ", tests: " + tech.testDaysDone + "/" + tech.testDaysDone + "); "
-                );
-            }
-            System.out.println();
-        }
-
-        System.out.println();
     }
 
 
@@ -276,12 +266,22 @@ public class Game {
     }
 
 
-    public char getKey(){
-        Scanner sc = new Scanner(System.in);
-        return sc.next().charAt(0);
+    // PRIVATE METHODS
+
+    private void generateClients(){
+        for (int i = 1; i <= Conf.CLIENTS_NUM; i++)
+            clients.add(new Client());
     }
 
-    public static Integer randInt(int min, int max){
-        return ThreadLocalRandom.current().nextInt(min, max + 1);
+
+    private void generateInitialProjects(){
+        for (int i = 1; i <= Conf.INITIAL_AVAILABLE_PROJECTS_NUM; i++)
+            projects.add(new Project(clients.get(Tool.randInt(0, clients.size() - 1))));
     }
+
+
+    private Long getDayNumber() {
+        return ChronoUnit.DAYS.between(Conf.START_DATE, currentDate) + 1;
+    }
+
 }

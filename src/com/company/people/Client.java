@@ -1,25 +1,40 @@
 package com.company.people;
 
-import com.company.Game;
+import com.company.assets.Tool;
 
 
 public class Client extends Person {
 
-    public String name;
-    public Integer paymentDelayWeekChance = 0;
-    public Integer paymentDelayMonthChance = 0;
-    public Integer paymentNeverChance = 0;
-    public Integer delayWeekPenaltyAvoidChance = 0;
-    public Integer problemsFromNotWorkingProjectChance = 0;
+    private Integer paymentDelayWeekChance;
+    private Integer paymentDelayMonthChance;
+    private Integer paymentNeverChance;
+    private Integer delayWeekPenaltyAvoidChance;
+    private Integer problemsFromNotWorkingProjectChance;
 
+
+    // GETTERS
+
+    public Integer getPaymentDelayWeekChance() { return paymentDelayWeekChance; }
+    public Integer getPaymentDelayMonthChance() { return paymentDelayMonthChance; }
+    public Integer getPaymentNeverChance() { return paymentNeverChance; }
+    public Integer getDelayWeekPenaltyAvoidChance() { return delayWeekPenaltyAvoidChance; }
+    public Integer getProblemsFromNotWorkingProjectChance() { return problemsFromNotWorkingProjectChance; }
+
+
+    // CONSTRUCTORS
 
     public Client(){
 
-        name = generateName();
+        // default values
+        paymentDelayWeekChance = 0;
+        paymentDelayMonthChance = 0;
+        paymentNeverChance = 0;
+        delayWeekPenaltyAvoidChance = 0;
+        problemsFromNotWorkingProjectChance = 0;
 
+        // specific values
         // client types: 1 (easy going), 2 (demanding), 3 (unpredictable)
-
-        switch(Game.randInt(1,3)){
+        switch(Tool.randInt(1,3)){
             case 1:
                 paymentDelayWeekChance = 30;
                 delayWeekPenaltyAvoidChance = 20;
@@ -35,4 +50,6 @@ public class Client extends Person {
                 break;
         }
     }
+
+
 }

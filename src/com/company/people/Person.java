@@ -1,21 +1,26 @@
 package com.company.people;
 
-import com.company.Game;
+import com.company.assets.Lang;
+import com.company.assets.Tool;
 
 public class Person {
 
-    private static String[] firstNames = {
-            "James", "Mary", "John", "Patricia", "Robert", "Jennifer", "Michael", "Linda", "William", "Elizabeth",
-            "David", "Barbara", "Richard", "Susan", "Joseph", "Jessica", "Thomas", "Sarah", "Charles", "Karen"
-    };
+    // FIELDS
 
-    private static String[] lastNames = {
-            "Smith", "Johnson", "Anderson", "Nelson", "Olson", "Miller", "Garcia", "Hernandez", "Lopez", "Martinez",
-            "Williams", "Brown", "Jones", "Lee", "Wong", "Kim"
-    };
+    private final String firstName;
+    private final String lastName;
 
 
-    public static String generateName(){
-        return firstNames[Game.randInt(0,firstNames.length-1)] + " " + lastNames[Game.randInt(0, lastNames.length-1)];
+    // GETTERS
+
+    public String getName() { return firstName + " " + lastName; }
+
+
+    // CONSTRUCTORS
+
+    protected Person(){
+        firstName = Lang.firstNames[Tool.randInt(0, Lang.firstNames.length - 1)];
+        lastName = Lang.lastNames[Tool.randInt(0, Lang.lastNames.length - 1)];
     }
+
 }
