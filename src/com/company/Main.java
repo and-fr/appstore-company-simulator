@@ -9,8 +9,8 @@ public class Main {
 
         Game game = new Game();
 
+        game.showSummary();
         while(true){
-            game.showSummary();
             game.showMainMenu();
 
             switch (Tool.getKey()){
@@ -31,9 +31,10 @@ public class Main {
                 case '5': // return project
                     game.optionReturnProject();
                     break;
-                case '6': // hire/fire employee
+                case '6': // employees
                     break;
-                case '7': // hire contractor
+                case '7': // contractors
+                    game.optionContractors();
                     break;
                 case '8': // company tasks
                     break;

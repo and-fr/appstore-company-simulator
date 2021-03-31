@@ -5,6 +5,7 @@ import com.company.assets.Conf;
 import com.company.assets.Lang;
 import com.company.people.Client;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -21,6 +22,7 @@ public class Project {
     private final Boolean isPaymentNever;
     private final Boolean isPenaltyAvoidedWithinWeekOfDelay;
     private final Boolean isProblemFromNotWorkingProject;
+    private LocalDate startDate;
 
 
     // CONSTRUCTORS
@@ -45,6 +47,18 @@ public class Project {
     public Boolean getIsPaymentNever() { return isPaymentNever; }
     public Boolean getIsPenaltyAvoidedWithinWeekOfDelay() { return isPenaltyAvoidedWithinWeekOfDelay; }
     public Boolean getIsProblemFromNotWorkingProject() { return isProblemFromNotWorkingProject; }
+    public LocalDate getStartDate() { return startDate; }
+
+    public LocalDate getDeadline() {
+        // deadline date is calculated from start date
+        // by adding total number of work days for all project's technologies
+        // plus some percent of those days
+        // for short projects if percent result is lower than one, then just 1 day is added
+        long days = (long)getTotalWorkDaysNeeded();
+        long additionalDays = (long)((double)days * Conf.ADDITIONAL_PROJECT_DAYS_MULTIPLIER);
+        if (additionalDays < 1) additionalDays = 1;
+        return startDate.plusDays(days + additionalDays);
+    }
 
 
     // calculates price for project (num days for all techs * 8 hours * pay4hour + 10%)
@@ -112,6 +126,11 @@ public class Project {
                 return true;
         return false;
     }
+
+
+    // SETTERS
+
+    public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
 
 
     // PRIVATE METHODS

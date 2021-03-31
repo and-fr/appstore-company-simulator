@@ -17,24 +17,23 @@ public class Lang {
     };
 
     public static final String[] technologyNames = {
-        "Front-End", "Backend", "Database", "Mobile", "Wordpress", "Prestashop"
+        "Backend", "Database", "Front-End", "Mobile", "Prestashop", "Wordpress"
     };
 
-    public static String[] firstNames = {
+    public static final String[] firstNames = {
         "James", "Mary", "John", "Patricia", "Robert", "Jennifer", "Michael", "Linda", "William", "Elizabeth",
         "David", "Barbara", "Richard", "Susan", "Joseph", "Jessica", "Thomas", "Sarah", "Charles", "Karen"
     };
 
-    public static String[] lastNames = {
+    public static final String[] lastNames = {
         "Smith", "Johnson", "Anderson", "Nelson", "Olson", "Miller", "Garcia", "Hernandez", "Lopez", "Martinez",
         "Williams", "Brown", "Jones", "Lee", "Wong", "Kim"
     };
 
     public static final String MAIN_MENU = """
-        \t1. Take a new project     5. Return project to client     9. Next day
-        \t2. Search for clients     6. Hire/Fire an employee        0. Exit
-        \t3. Programming            7. Hire a contractor
-        \t4. Testing                8. Company tasks
+        \t1. New projects           3. Programming        6. Employees         9. Next day
+        \t2. Search for clients     4. Testing            7. Contractors       0. Exit
+        \t                          5. Return project     8. Company tasks
         
         [Type a number and press Enter]
         """;

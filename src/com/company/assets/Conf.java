@@ -6,7 +6,11 @@ public class Conf {
 
     public static final Boolean START_COMPANY_HAS_OFFICE = false;
 
+    public static final Double ADDITIONAL_PROJECT_DAYS_MULTIPLIER = 0.2;
     public static final Double PAY_FOR_HOUR = 100.0;
+    public static final Double PAY_FOR_HOUR_CONTRACTOR_HIGH = 70.0;
+    public static final Double PAY_FOR_HOUR_CONTRACTOR_MID = 60.0;
+    public static final Double PAY_FOR_HOUR_CONTRACTOR_LOW = 50.0;
     public static final Double PENALTY_MULTIPLIER = 0.1;
     public static final Double START_MONEY = 200.0;
 

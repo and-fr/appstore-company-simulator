@@ -51,8 +51,9 @@ public class Company {
         int count = 0;
         for (Project prj:projects) {
             sb.append("\t").append(++count).append(".");
-            sb.append(" | ").append(prj.getName()).append(" from ").append(prj.getClient().getName());
-            sb.append(" | price: ").append(prj.getPrice()).append("\n\t\t techs: ");
+            sb.append(" | ").append(prj.getName()).append(" for ").append(prj.getClient().getName());
+            sb.append(" | price: ").append(prj.getPrice()).append(" | deadline: ").append(prj.getDeadline());
+            sb.append("\n\t\t techs: ");
             for (Technology tech : prj.getTechnologies()) {
                 sb.append(tech.getName()).append(" (code ").append(tech.getWorkDaysDone()).append("/");
                 sb.append(tech.getWorkDaysNeeded()).append(", tests: ").append(tech.getTestDaysDone()).append("/");

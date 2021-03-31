@@ -3,6 +3,7 @@ package com.company;
 import com.company.assets.Conf;
 import com.company.assets.Lang;
 import com.company.assets.Tool;
+import com.company.people.Contractor;
 import com.company.things.Company;
 import com.company.things.Project;
 import com.company.things.Technology;
@@ -21,6 +22,7 @@ public class Game {
     private LocalDate currentDate;
     private final List<Client> clients = new ArrayList<>();
     private final List<Project> projects = new ArrayList<>();
+    private final List<Contractor> contractors = new ArrayList<>();
     private final Company company = new Company();
     private Integer searchDaysForClients = 0;
 
@@ -31,6 +33,7 @@ public class Game {
         currentDate = Conf.START_DATE;
         generateClients();
         generateInitialProjects();
+        generateContractors();
         System.out.println(Lang.GAME_WELCOME_MESSAGE);
     }
 
@@ -39,7 +42,7 @@ public class Game {
 
     public void showSummary(){
         StringBuilder summary = new StringBuilder();
-        summary.append("DAY ").append(getDayNumber()).append(" (").append(currentDate.getDayOfWeek()).append(") | ");
+        summary.append("DAY ").append(getDayNumber()).append(" (").append(currentDate).append(" ").append(currentDate.getDayOfWeek()).append(") | ");
         summary.append("MONEY: ").append(company.getMoney()).append(" | ");
         summary.append("PROJECTS: ").append(company.getProjects().size()).append(" | ");
         summary.append("OFFICE: ").append(company.getHasOffice() ? "yes" : "no").append(" | ");
@@ -97,7 +100,9 @@ public class Game {
             // if player selects a valid project then the project is added to company's projects
             int selectedProjectNum = Character.getNumericValue(ch);
             if (selectedProjectNum > 0 && selectedProjectNum <= projects.size()){
-                company.addProject(projects.get(selectedProjectNum - 1));
+                Project prj = projects.get(selectedProjectNum - 1);
+                company.addProject(prj);
+                prj.setStartDate(currentDate);
                 projects.remove(selectedProjectNum - 1);
                 advanceNextDay();
                 break;
@@ -107,15 +112,16 @@ public class Game {
 
 
     public void optionSearchForClients(){
-        advanceNextDay();
         if (searchDaysForClients < 4){
             searchDaysForClients += 1;
             System.out.println("(INFO) Since a new project was available you've searched for client for days: " + searchDaysForClients);
-            return;
+        } else {
+            searchDaysForClients = 0;
+            addNewProject();
+            System.out.println("(INFO) Your search has finally payed off. A new project is available.");
         }
-        searchDaysForClients = 0;
-        addNewProject();
-        System.out.println("(INFO) Your search has finally payed off. A new project is available.");
+        System.out.println();
+        advanceNextDay();
     }
 
 
@@ -145,7 +151,7 @@ public class Game {
                 }
 
                 System.out.println("Chosen project: #" + selectedProjectNum + " " + prj.getName());
-                System.out.print("Project's technologies:\n\t");
+                System.out.println("Project's technologies:\n\t");
                 int count = 0;
                 for (Technology tech:prj.getTechnologies()) {
                     System.out.print(++count + ". " + tech.getName() + "   ");
@@ -211,7 +217,7 @@ public class Game {
                 }
 
                 System.out.println("Chosen project: #" + selectedProjectNum + " " + prj.getName());
-                System.out.print("Project's technologies:\n\t");
+                System.out.println("Project's technologies:\n\t");
                 int count = 0;
                 for (Technology tech:prj.getTechnologies()) {
                     System.out.print(++count + ". " + tech.getName() + "   ");
@@ -261,8 +267,44 @@ public class Game {
     }
 
 
+    public void optionContractors(){
+        StringBuilder sb = new StringBuilder().append("CONTRACTORS:\n\n");
+
+        // if company has no projects then contractors can't be hired
+        if (company.getProjects().size() == 0){
+            System.out.println("(INFO) Your company has no projects for any contractor to work on.\n");
+            return;
+        }
+
+        int count = 0;
+        for (Contractor con:contractors) {
+            sb.append("\t").append(++count).append(". | ").append(con.getName());
+            sb.append(" | pay for hour: ").append(con.getPayForHour());
+            sb.append(" | on time: ").append(con.getFinishOnTime()).append(" | no errors: ").append(con.getNoErrors());
+            sb.append("\n\t\t ").append("skills: ");
+            for (String skill:con.getSkills()) {
+                sb.append(skill).append(" ");
+            }
+            sb.append("\n");
+        }
+        System.out.println(sb);
+        System.out.println("[Type number of contractor you want to hire. Type 0 for cancel. Then Press Enter.]");
+
+        while(true){
+            char ch = Tool.getKey();
+            if (ch == '0') return;
+
+            int selectedContractorNum = Character.getNumericValue(ch);
+            if (selectedContractorNum >= 1 && selectedContractorNum <= contractors.size()){
+                Contractor contractor = contractors.get(selectedContractorNum - 1);
+            }
+        }
+    }
+
+
     public void advanceNextDay(){
         currentDate = currentDate.plusDays(1);
+        showSummary();
     }
 
 
@@ -277,6 +319,14 @@ public class Game {
     private void generateInitialProjects(){
         for (int i = 1; i <= Conf.INITIAL_AVAILABLE_PROJECTS_NUM; i++)
             projects.add(new Project(clients.get(Tool.randInt(0, clients.size() - 1))));
+    }
+
+
+    private void generateContractors() {
+        // Double payForHour, Boolean finishOnTime, Boolean noErrors
+        contractors.add(new Contractor(Conf.PAY_FOR_HOUR_CONTRACTOR_HIGH, true, true));
+        contractors.add(new Contractor(Conf.PAY_FOR_HOUR_CONTRACTOR_MID, true, false));
+        contractors.add(new Contractor(Conf.PAY_FOR_HOUR_CONTRACTOR_LOW, false, false));
     }
 
 

@@ -1,6 +1,17 @@
 package com.company.people;
 
-import com.company.people.Person;
-
 public class Seller extends Person {
+
+    private Integer searchDaysForClients;
+
+
+    public Integer getSearchDaysForClients() {return searchDaysForClients; }
+
+
+    public void setSearchDaysForClients(Integer number) { searchDaysForClients = number; }
+
+
+    public Seller(){
+        searchDaysForClients = 0;
+    }
 }
