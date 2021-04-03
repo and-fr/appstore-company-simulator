@@ -6,10 +6,9 @@ import com.company.assets.Lang;
 import com.company.people.Client;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+
 
 public class Project {
 
@@ -23,6 +22,8 @@ public class Project {
     private final Boolean isPenaltyAvoidedWithinWeekOfDelay;
     private final Boolean isProblemFromNotWorkingProject;
     private LocalDate startDate;
+    private LocalDate returnDate;
+    private final Integer totalWorkDaysNeeded;
 
 
     // CONSTRUCTORS
@@ -31,6 +32,7 @@ public class Project {
         this.client = client;
         name = generateProjectName();
         technologies = generateTechnologies();
+        totalWorkDaysNeeded = generateTotalWorkDaysNeeded();
         paymentDelayDays = calculatePaymentDelayDays();
         isPaymentNever = isPaymentNever();
         isPenaltyAvoidedWithinWeekOfDelay = isPenaltyAvoidedWithinWeekOfDelay();
@@ -48,36 +50,65 @@ public class Project {
     public Boolean getIsPenaltyAvoidedWithinWeekOfDelay() { return isPenaltyAvoidedWithinWeekOfDelay; }
     public Boolean getIsProblemFromNotWorkingProject() { return isProblemFromNotWorkingProject; }
     public LocalDate getStartDate() { return startDate; }
+    public Integer getTotalWorkDaysNeeded(){ return totalWorkDaysNeeded; }
+
 
     public LocalDate getDeadline() {
         // deadline date is calculated from start date
-        // by adding total number of work days for all project's technologies
-        // plus some percent of those days
-        // for short projects if percent result is lower than one, then just 1 day is added
-        long days = (long)getTotalWorkDaysNeeded();
-        long additionalDays = (long)((double)days * Conf.ADDITIONAL_PROJECT_DAYS_MULTIPLIER);
-        if (additionalDays < 1) additionalDays = 1;
-        return startDate.plusDays(days + additionalDays);
+        // by adding totalWorkDaysNeeded for the project
+        return startDate.plusDays((long)totalWorkDaysNeeded);
     }
 
 
-    // calculates price for project (num days for all techs * 8 hours * pay4hour + 10%)
     public Double getPrice(){
-        double cost = ( (double)getTotalWorkDaysNeeded() * 8.0 * Conf.PAY_FOR_HOUR ) * 1.1;
+        // calculates price for project (code days & test days for all techs * 8 hours * pay4hour)
+
+        double payForWorkDay = Conf.PAY_FOR_HOUR * 8.0;
+        double cost = (double)getCodeDaysNeeded() * 2.0 * payForWorkDay;
         cost = (double) (Math.round(cost * 100.0) / 100);
+
+        // for project with totalDaysNeeded < codeDaysNeeded * 2
+        // its price depends on the number of days of difference between the two
+        int daysDiff = (getCodeDaysNeeded() * 2) - totalWorkDaysNeeded;
+        cost += (double) daysDiff * payForWorkDay;
+
         return cost;
     }
 
 
-    // penalty for not completing project on time
+    public Integer getCodeDaysNeeded(){
+        int days = 0;
+        for (Technology tech:technologies)
+            days += tech.getCodeDaysNeeded();
+        return days;
+    }
+
+
+    public Integer getCodeDaysDone(){
+        int days = 0;
+        for (Technology tech:technologies)
+            days += tech.getCodeDaysDone();
+        return days;
+    }
+
+
+    public Integer getTestDaysDone(){
+        int days = 0;
+        for (Technology tech:technologies)
+            days += tech.getTestDaysDone();
+        return days;
+    }
+
+
     public Double getPenaltyPrice() {
+        // penalty for not completing project on time
         // by default penalty is 10% of project's price
         return getPrice() * Conf.PENALTY_MULTIPLIER;
     }
 
 
-    // a number of days when client will pay after project is completed
     private Integer getPaymentDue(){
+        // a number of days when client will pay after project is completed
         // by default payment due is dependent on complexity of project (its number of techs)
         // 1 tech - 7 days, 2,3 - 14 days, more - 21 days
         switch(technologies.size()){
@@ -88,25 +119,17 @@ public class Project {
     }
 
 
-    public Integer getTotalWorkDaysNeeded(){
-        int days = 0;
-        for (Technology tech:technologies)
-            days += tech.getWorkDaysNeeded();
-        return days;
-    }
-
-
     public Integer getTotalWorkDaysDone(){
         int days = 0;
         for (Technology tech:technologies)
-            days += tech.getWorkDaysDone();
+            days += tech.getCodeDaysDone();
         return days;
     }
 
 
     public Boolean isCodeCompleted(){
         for (Technology tech:technologies)
-            if (tech.getWorkDaysDone() < tech.getWorkDaysNeeded())
+            if (tech.getCodeDaysDone() < tech.getCodeDaysNeeded())
                 return false;
         return true;
     }
@@ -114,7 +137,7 @@ public class Project {
 
     public Boolean isTestCompleted(){
         for (Technology tech:technologies)
-            if (tech.getTestDaysDone() < tech.getWorkDaysDone())
+            if (tech.getTestDaysDone() < tech.getCodeDaysDone())
                 return false;
         return true;
     }
@@ -128,12 +151,52 @@ public class Project {
     }
 
 
+    public void showProjectDetails(LocalDate gameDate){
+        int delayDays = getDaysOfDealy(gameDate);
+        int codePercentComplete = 0;
+        int testPercentComplete = 0;
+
+        StringBuilder sb = new StringBuilder("PROJECT'S SUMMARY:\n");
+        sb.append(getName()).append(" for ").append(getClient().getName());
+        sb.append(" | price: ").append(getPrice());
+        sb.append(" | deadline: ").append(getDeadline());
+        sb.append(" (delay days: ").append( delayDays > 0 ? delayDays : "no" ).append(")\n");
+        sb.append("techs: ");
+        for (Technology tech:technologies) {
+            codePercentComplete = (int) (((double)tech.getCodeDaysDone() / (double)tech.getCodeDaysNeeded()) * 100.0);
+            testPercentComplete = (int) (((double)tech.getTestDaysDone() / (double)tech.getCodeDaysNeeded()) * 100.0);
+            sb.append(tech.getName()).append(" (code: ").append(codePercentComplete).append("%, tests: ").append(testPercentComplete).append("%) ");
+        }
+
+        sb.append("\nCODE COMPLETED: ").append(getCodeCompletionPercent()).append("% | ");
+        sb.append("TESTS COMPLETED: ").append(getTestCompletionPercent()).append("%");
+
+        System.out.println(sb);
+    }
+
+
+    public Integer getCodeCompletionPercent(){
+        return (int) (((double)getCodeDaysDone() / (double)getCodeDaysNeeded()) * 100.0);
+    }
+
+
+    public Integer getTestCompletionPercent(){
+        return (int) (((double)getTestDaysDone() / (double)getCodeDaysNeeded()) * 100.0);
+    }
+
+
+    public Integer getDaysOfDealy(LocalDate gameDate) {
+        return (int) ChronoUnit.DAYS.between(getDeadline(), gameDate);
+    }
+
+
     // SETTERS
 
     public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
+    public void setReturnDate(LocalDate returnDate) { this.returnDate = returnDate; }
 
 
-    // PRIVATE METHODS
+    // OTHER METHODS
 
     private String generateProjectName(){
         int index = Tool.randInt(0, Lang.projectNames.length - 1);
@@ -141,8 +204,8 @@ public class Project {
     }
 
 
-    // generates random number of random but unique techs for project
     private List<Technology> generateTechnologies(){
+        // generates random number of random but unique techs for project
         String[] techNames = Lang.technologyNames;
         Collections.shuffle(Arrays.asList(techNames));
         List<Technology> techs = new ArrayList<>();
@@ -190,4 +253,44 @@ public class Project {
             return Tool.randInt(1,100) <= client.getDelayWeekPenaltyAvoidChance();
         return false;
     }
+
+
+    public Integer generateTotalWorkDaysNeeded(){
+        int numTechs = technologies.size();
+        int days = 0;
+        int maxDaysOfTech = 0;
+
+        // for 1 tech: codeDaysNeeded * 2
+        if (numTechs == 1){
+            for (Technology tech:technologies)
+                days += tech.getCodeDaysNeeded();
+            days *= 2;
+        }
+
+        // for 2 techs and more:
+        // sum of codeDaysNeeded for each tech
+        // + random number between days of tech with max days and that sum
+        if (numTechs > 1) {
+            for (Technology tech:technologies) {
+                days += tech.getCodeDaysNeeded();
+                if (maxDaysOfTech < tech.getCodeDaysNeeded())
+                    maxDaysOfTech = tech.getCodeDaysNeeded();
+            }
+            days += Tool.randInt(maxDaysOfTech, days);
+        }
+
+        return days;
+    }
+
+
+    public void showAllTechnologies(){
+        System.out.println("Project: " + name);
+        System.out.println("Technologies:\n");
+        int count = 0;
+        for (Technology tech:technologies) {
+            System.out.print("\t" + ++count + ". " + tech.getName() + "   ");
+        }
+        System.out.println("\n");
+    }
+
 }

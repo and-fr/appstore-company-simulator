@@ -12,7 +12,7 @@ public class Lang {
 
     public static final String[] projectNames = {
         "E-Commerce Solution", "Company Web Page", "Company Web Page Integration", "Software Upgrade",
-        "Software Update", "Simulation Software", "Scientific Research Project", "Infrastructure Upgrade",
+        "Software Update", "Simulation Software", "Scientific Research", "Infrastructure Upgrade",
         "Infrastructure Update", "API Implementation", "Security Solutions"
     };
 

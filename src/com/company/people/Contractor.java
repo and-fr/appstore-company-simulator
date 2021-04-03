@@ -18,8 +18,8 @@ public class Contractor extends Person{
 
 
     public Double getPayForHour() { return payForHour; }
-    public Boolean getFinishOnTime() { return finishOnTime; }
-    public Boolean getNoErrors() { return noErrors; }
+    public Boolean isFinishOnTime() { return finishOnTime; }
+    public Boolean isNoErrors() { return noErrors; }
     public List<String> getSkills() { return skills; }
 
 
@@ -36,5 +36,7 @@ public class Contractor extends Person{
         Collections.shuffle(skills);
         return skills.subList(0, Tool.randInt(1, skills.size()));
     }
+
+
 
 }
