@@ -92,7 +92,7 @@ public class Company {
                     if (tech.getCodeDaysDone() < tech.getCodeDaysNeeded()){
                         // for contractor who has a trait "not finishes on time"
                         // theres a chance that one of the days won't be productive and no code will be provided
-                        if (tech.getContractor().isFinishOnTime() == false)
+                        if (!tech.getContractor().isFinishOnTime())
                             if (Tool.randInt(1,100) <= Conf.CONTRACTORS_CODE_DAY_FAILURE_CHANCE_PERCENT){
                                 System.out.println("(INFO) Today, contractor " + tech.getContractor().getName() + " hasn't provided any CODE on "
                                         + tech.getName() + " technology for " + prj.getName() + " project.\n");
@@ -119,7 +119,7 @@ public class Company {
                         }
 
                         // if contractor has trait to not return working (tested) code in full
-                        if (tech.getContractor().isNoErrors() == false){
+                        if (!tech.getContractor().isNoErrors()){
                             if (Tool.randInt(1,100) <= Conf.CONTRACTORS_TEST_DAY_FAILURE_CHANCE_PERCENT){
                                 tech.setContractorTestFailureDaysPlus(1);
                                 System.out.println("(INFO) Today, contractor " + tech.getContractor().getName() + " hasn't provided any TESTS for "
@@ -151,11 +151,9 @@ public class Company {
                         Contractor contractor = tech.getContractor();
 
                         // prepare payment for contractor
-                        int workDays = tech.getContractorCodeDays() + tech.getContractorTestDays();
-                        double payment = (double) workDays * 8.0 * contractor.getPayForHour();
                         String description = "Payment for " + contractor.getName() + ". Tech: " + tech.getName()
-                                + ". Project: " + prj.getName() + ". Work days: " + workDays + ".";
-                        transactionsOut.add(new Transaction(payment, currentDate.plusDays(Conf.CONTRACTORS_PAY_AFTER_DAYS), description));
+                                + ". Project: " + prj.getName() + ". Work days: " + tech.getContractorWorkDays() + ".";
+                        transactionsOut.add(new Transaction(tech.getContractorCost(), currentDate.plusDays(Conf.CONTRACTORS_PAY_AFTER_DAYS), description));
 
                         // add contractor to available contractors global group
                         // and remove contractor from current tech

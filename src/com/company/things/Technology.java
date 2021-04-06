@@ -74,8 +74,14 @@ public class Technology {
     public Integer getContractorCodeDays() { return contractorCodeDays; }
     public Integer getContractorTestDays() { return contractorTestDays; }
     public Integer getContractorTestFailureDays() { return contractorTestFailureDays; }
-    public Boolean isContractorAssigned() { return (contractor == null) ? false : true; }
+    public Boolean isContractorAssigned() { return contractor != null; }
     public Boolean isContractorWorkFinished() { return isContractorWorkFinished; }
+    public Boolean isCodeCompleted() { return codeDaysDone >= codeDaysNeeded; }
+    public Boolean isTestCompleted() { return testDaysDone >= codeDaysNeeded; }
+    public Boolean isFinished() { return (codeDaysDone >= codeDaysNeeded) && (testDaysDone >= codeDaysNeeded); }
+    public Double getContractorCost() { return (double) (contractorCodeDays + contractorTestDays) * 8.0 * contractor.getPayForHour(); }
+    public Integer getContractorWorkDays() { return contractorCodeDays + contractorTestDays; }
+
 
 
     // SETTERS
@@ -94,13 +100,15 @@ public class Technology {
     }
 
 
-    // METHODS
+    // OTHER METHODS
 
     public void setLuckyTestDayForPlayer(){
         // player has a percent chance of having a "lucky coding day"
         // when code is so good that one test day for that tech is received for free
-        if (Tool.randInt(1, 100) <= Conf.PLAYER_LUCKY_TEST_DAY_CHANCE_PERCENT)
+        if (Tool.randInt(1, 100) <= Conf.PLAYER_LUCKY_TEST_DAY_CHANCE_PERCENT){
             setTestDaysDonePlus(1);
+            System.out.println("(INFO) You had your LUCKY programming day. Your code was so good that one free test day was added.\n");
+        }
     }
 
 }

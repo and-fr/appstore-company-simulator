@@ -31,9 +31,8 @@ public class Lang {
     };
 
     public static final String MAIN_MENU = """
-        \t1. New projects           3. Programming        6. Employees         9. Next day
-        \t2. Search for clients     4. Testing            7. Contractors       0. Exit
-        \t                          5. Return project     8. Company tasks
+        \t1. New projects         3. Code / Test      5. Contractors   7. Company tasks     9. Next day
+        \t2. Search for clients   4. Return project   6. Employees     8. Company reports   0. Exit
         
         [Type a number and press Enter]
         """;

@@ -22,21 +22,20 @@ public class Main {
                 case '2': // search for clients
                     game.optionSearchForClients();
                     break;
-                case '3': // programming
+                case '3': // programming: coding or testing
                     game.optionProgramming();
                     break;
-                case '4': // testing
-                    game.optionTesting();
-                    break;
-                case '5': // return project
+                case '4': // return project
                     game.optionReturnProject();
+                    break;
+                case '5': // contractors
+                    game.optionContractors();
                     break;
                 case '6': // employees
                     break;
-                case '7': // contractors
-                    game.optionContractors();
+                case '7': // company tasks
                     break;
-                case '8': // company tasks
+                case '8': // company reports
                     break;
                 case '9': // next day
                     game.advanceNextDay();

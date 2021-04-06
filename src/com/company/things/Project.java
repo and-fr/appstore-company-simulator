@@ -32,11 +32,11 @@ public class Project {
         this.client = client;
         name = generateProjectName();
         technologies = generateTechnologies();
-        totalWorkDaysNeeded = generateTotalWorkDaysNeeded();
+        totalWorkDaysNeeded = calculateTotalWorkDaysNeeded();
         paymentDelayDays = calculatePaymentDelayDays();
-        isPaymentNever = isPaymentNever();
-        isPenaltyAvoidedWithinWeekOfDelay = isPenaltyAvoidedWithinWeekOfDelay();
-        isProblemFromNotWorkingProject = isProblemFromNotWorkingProject();
+        isPaymentNever = calculatePaymentNever();
+        isPenaltyAvoidedWithinWeekOfDelay = calculatePenaltyAvoidedWithinWeekOfDelay();
+        isProblemFromNotWorkingProject = calculateProblemFromNotWorkingProject();
     }
 
 
@@ -46,19 +46,17 @@ public class Project {
     public String getName() { return name; }
     public List<Technology> getTechnologies(){ return technologies; }
     public Integer getPaymentDelayDays() { return paymentDelayDays; }
-    public Boolean getIsPaymentNever() { return isPaymentNever; }
-    public Boolean getIsPenaltyAvoidedWithinWeekOfDelay() { return isPenaltyAvoidedWithinWeekOfDelay; }
-    public Boolean getIsProblemFromNotWorkingProject() { return isProblemFromNotWorkingProject; }
+    public Boolean isPaymentNever() { return isPaymentNever; }
+    public Boolean isPenaltyAvoidedWithinWeekOfDelay() { return isPenaltyAvoidedWithinWeekOfDelay; }
+    public Boolean isProblemFromNotWorkingProject() { return isProblemFromNotWorkingProject; }
     public LocalDate getStartDate() { return startDate; }
     public Integer getTotalWorkDaysNeeded(){ return totalWorkDaysNeeded; }
-
 
     public LocalDate getDeadline() {
         // deadline date is calculated from start date
         // by adding totalWorkDaysNeeded for the project
         return startDate.plusDays((long)totalWorkDaysNeeded);
     }
-
 
     public Double getPrice(){
         // calculates price for project (code days & test days for all techs * 8 hours * pay4hour)
@@ -103,11 +101,11 @@ public class Project {
     public Double getPenaltyPrice() {
         // penalty for not completing project on time
         // by default penalty is 10% of project's price
-        return getPrice() * Conf.PENALTY_MULTIPLIER;
+        return getPrice() * Conf.PRICE_PENALTY_MULTIPLIER;
     }
 
 
-    private Integer getPaymentDue(){
+    public Integer getPaymentDaysDue(){
         // a number of days when client will pay after project is completed
         // by default payment due is dependent on complexity of project (its number of techs)
         // 1 tech - 7 days, 2,3 - 14 days, more - 21 days
@@ -143,6 +141,17 @@ public class Project {
     }
 
 
+    public Boolean isFinished(){
+        for (Technology tech:technologies){
+            if (tech.getCodeDaysDone() < tech.getCodeDaysNeeded())
+                return false;
+            if (tech.getTestDaysDone() < tech.getCodeDaysNeeded())
+                return false;
+        }
+        return true;
+    }
+
+
     public Boolean hasMobileTech(){
         for (Technology tech:technologies)
             if (tech.getName().equals("Mobile"))
@@ -150,29 +159,6 @@ public class Project {
         return false;
     }
 
-
-    public void showProjectDetails(LocalDate gameDate){
-        int delayDays = getDaysOfDealy(gameDate);
-        int codePercentComplete = 0;
-        int testPercentComplete = 0;
-
-        StringBuilder sb = new StringBuilder("PROJECT'S SUMMARY:\n");
-        sb.append(getName()).append(" for ").append(getClient().getName());
-        sb.append(" | price: ").append(getPrice());
-        sb.append(" | deadline: ").append(getDeadline());
-        sb.append(" (delay days: ").append( delayDays > 0 ? delayDays : "no" ).append(")\n");
-        sb.append("techs: ");
-        for (Technology tech:technologies) {
-            codePercentComplete = (int) (((double)tech.getCodeDaysDone() / (double)tech.getCodeDaysNeeded()) * 100.0);
-            testPercentComplete = (int) (((double)tech.getTestDaysDone() / (double)tech.getCodeDaysNeeded()) * 100.0);
-            sb.append(tech.getName()).append(" (code: ").append(codePercentComplete).append("%, tests: ").append(testPercentComplete).append("%) ");
-        }
-
-        sb.append("\nCODE COMPLETED: ").append(getCodeCompletionPercent()).append("% | ");
-        sb.append("TESTS COMPLETED: ").append(getTestCompletionPercent()).append("%");
-
-        System.out.println(sb);
-    }
 
 
     public Integer getCodeCompletionPercent(){
@@ -185,7 +171,12 @@ public class Project {
     }
 
 
-    public Integer getDaysOfDealy(LocalDate gameDate) {
+    public Integer getCompletionPercent(){
+        return (getCodeCompletionPercent() + getTestCompletionPercent()) / 2;
+    }
+
+
+    public Integer getDaysOfDelay(LocalDate gameDate) {
         return (int) ChronoUnit.DAYS.between(getDeadline(), gameDate);
     }
 
@@ -231,15 +222,16 @@ public class Project {
     }
 
 
-    private Boolean isPaymentNever(){
+    private Boolean calculatePaymentNever(){
         // client will never pay for the project
+        // this chance depends on client's trait and its calculation for each and every project separately
         if (client.getPaymentNeverChance() > 0)
             return Tool.randInt(1, 100) <= client.getPaymentNeverChance();
         return false;
     }
 
 
-    private Boolean isPenaltyAvoidedWithinWeekOfDelay(){
+    private Boolean calculatePenaltyAvoidedWithinWeekOfDelay(){
         // chance to avoid penalty if project will be delayed by no more than one week
         if (client.getDelayWeekPenaltyAvoidChance() > 0)
             return Tool.randInt(1,100) <= client.getDelayWeekPenaltyAvoidChance();
@@ -247,15 +239,15 @@ public class Project {
     }
 
 
-    private Boolean isProblemFromNotWorkingProject(){
-        // chance to avoid problems (penalty fee) when you deliver unfinished project to client
-        if (client.getDelayWeekPenaltyAvoidChance() > 0)
-            return Tool.randInt(1,100) <= client.getDelayWeekPenaltyAvoidChance();
+    private Boolean calculateProblemFromNotWorkingProject(){
+        // chance to avoid problems (e.g. canceling the contract) when you deliver unfinished project to client
+        if (client.getProblemsFromNotWorkingProjectChance() > 0)
+            return Tool.randInt(1,100) <= client.getProblemsFromNotWorkingProjectChance();
         return false;
     }
 
 
-    public Integer generateTotalWorkDaysNeeded(){
+    public Integer calculateTotalWorkDaysNeeded(){
         int numTechs = technologies.size();
         int days = 0;
         int maxDaysOfTech = 0;
@@ -291,6 +283,31 @@ public class Project {
             System.out.print("\t" + ++count + ". " + tech.getName() + "   ");
         }
         System.out.println("\n");
+    }
+
+
+    public void showProjectDetails(LocalDate gameDate){
+        int delayDays = getDaysOfDelay(gameDate);
+        int codePercentComplete;
+        int testPercentComplete;
+
+        StringBuilder sb = new StringBuilder("PROJECT'S SUMMARY:\n");
+        sb.append(getName()).append(" for ").append(getClient().getName());
+        sb.append(" | price: ").append(getPrice());
+        sb.append(" | deadline: ").append(getDeadline());
+        sb.append(" (delay days: ").append( delayDays > 0 ? delayDays : "no" ).append(")\n");
+        sb.append("techs: ");
+        for (Technology tech:technologies) {
+            codePercentComplete = (int) (((double)tech.getCodeDaysDone() / (double)tech.getCodeDaysNeeded()) * 100.0);
+            testPercentComplete = (int) (((double)tech.getTestDaysDone() / (double)tech.getCodeDaysNeeded()) * 100.0);
+            sb.append(tech.getName()).append(" (code: ").append(codePercentComplete).append("%, tests: ").append(testPercentComplete).append("%) ");
+        }
+
+        sb.append("\nCODE COMPLETED: ").append(getCodeCompletionPercent()).append("% | ");
+        sb.append("TESTS COMPLETED: ").append(getTestCompletionPercent()).append("% | ");
+        sb.append("OVERALL: ").append(getCompletionPercent()).append("%");
+
+        System.out.println(sb);
     }
 
 }

@@ -15,7 +15,7 @@ public class Conf {
     public static final Double PAY_FOR_HOUR_CONTRACTOR_HIGH = 70.0;
     public static final Double PAY_FOR_HOUR_CONTRACTOR_MID = 60.0;
     public static final Double PAY_FOR_HOUR_CONTRACTOR_LOW = 50.0;
-    public static final Double PENALTY_MULTIPLIER = 0.1;
+    public static final Double PRICE_PENALTY_MULTIPLIER = 0.1;
     public static final Double START_MONEY = 200.0;
 
 

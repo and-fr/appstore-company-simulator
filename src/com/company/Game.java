@@ -10,6 +10,7 @@ import com.company.things.Technology;
 import com.company.people.Client;
 import com.company.things.Transaction;
 
+
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -133,126 +134,113 @@ public class Game {
             return;
         }
 
+        Project project = null;
+        Technology technology = null;
+        String workType = null;
+        int selectedNum;
+        char key;
+
+        // MENU: PROJECT LEVEL
         System.out.println("COMPANY'S PROJECTS:\n");
         company.showAllProjects();
-        System.out.println("[Type a number of a project you would like to CODE for. Or type 0 for exit. Then press Enter.]");
+        System.out.println("[Type a number of a project you would like to CODE/TEST for. Or type 0 to cancel. Then press Enter.]");
 
-        Project prj;
-        while (true){
-            char ch = Tool.getKey();
-            if (ch == '0') return;
+        while (project == null){
+            key = Tool.getKey();
+            if (key == '0') return;
 
-            int selectedProjectNum = Character.getNumericValue(ch);
-            if (selectedProjectNum >= 1 && selectedProjectNum <= company.getProjects().size()){
-                prj = company.getProjects().get(selectedProjectNum - 1);
-
-                if (prj.isCodeCompleted()){
-                    System.out.println("(INFO) #" + selectedProjectNum + " project has code already completed.\n");
-                    continue;
-                }
-
-                prj.showAllTechnologies();
-                System.out.println("[Type a number of a technology to write code for. Type 0 to cancel. Then Press Enter.]");
-
-                while(true){
-                    ch = Tool.getKey();
-                    if (ch == '0') return;
-
-                    int selectedTechNum = Character.getNumericValue(ch);
-                    if (selectedTechNum >= 1 && selectedTechNum <= prj.getTechnologies().size()){
-
-                        Technology tech = prj.getTechnologies().get(selectedTechNum - 1);
-
-                        // check if tech is Mobile - player can't work on this, need to hire someone else
-                        if (tech.getName().equals("Mobile")){
-                            System.out.println("(INFO) You can't work on Mobile technology. You need to get a contractor or hire a programmer.\n");
-                            continue;
-                        }
-
-                        // check if tech is already completed, no more coding needed
-                        if (tech.getCodeDaysDone() >= tech.getCodeDaysNeeded()) {
-                            System.out.println("(INFO) The code for this technology is already complete.\n");
-                            continue;
-                        }
-
-                        // check if tech is not assigned to contractor (player can't work on this)
-                        if (tech.isContractorAssigned()){
-                            System.out.println("(INFO) There's a contractor who works on this technology. You can't code it.\n");
-                            continue;
-                        }
-
-                        tech.setCodeDaysDonePlus(1);
-
-                        // player has a chance of "lucky test day"
-                        // when the code is so good that free test day for that tech is received automatically
-                        tech.setLuckyTestDayForPlayer();
-
-                        System.out.println("(INFO) You spent one day on CODING for " + tech.getName() + " tech for " + prj.getName() + " project.\n");
-                        advanceNextDay();
-                        return;
-                    }
-                }
-            }
+            selectedNum = Character.getNumericValue(key);
+            if (selectedNum >= 1 && selectedNum <= company.getProjects().size())
+                project = company.getProjects().get(selectedNum - 1);
         }
-    }
 
-
-    public void optionTesting(){
-
-        if (company.getProjects().size() == 0){
-            System.out.println("(INFO) Your company has no any projects.\n");
+        // if all code and tests are completed there's no point to work on project anymore
+        if (project.isFinished()){
+            System.out.println("(INFO) " + project.getName() + " project has all code and tests already completed.\n");
             return;
         }
 
-        System.out.println("COMPANY'S PROJECTS:\n");
-        company.showAllProjects();
-        System.out.println("[Type a number of a project you would like to TEST a code for. Or type 0 for cancel. Then press Enter.]");
+        // MENU: TECHNOLOGY LEVEL
+        project.showAllTechnologies();
+        System.out.println("[Type a number of a technology you want to work with. Or type 0 to cancel. Then Press Enter.]");
 
-        Project prj;
-        while (true){
-            char ch = Tool.getKey();
-            if (ch == '0') return;
+        while (technology == null) {
+            key = Tool.getKey();
+            if (key == '0') return;
 
-            int selectedProjectNum = Character.getNumericValue(ch);
-            if (selectedProjectNum >= 1 && selectedProjectNum <= company.getProjects().size()){
-                prj = company.getProjects().get(selectedProjectNum - 1);
+            selectedNum = Character.getNumericValue(key);
+            if (selectedNum >= 1 && selectedNum <= project.getTechnologies().size())
+                technology = project.getTechnologies().get(selectedNum - 1);
+        }
 
-                if (prj.isTestCompleted()){
-                    System.out.println("(INFO) #" + selectedProjectNum + " project has tests already completed for all its written code.\n");
-                    continue;
-                }
+        // if all code and tests for technology are completed there's no point to work on it anymore
+        if (technology.isFinished()){
+            System.out.println("(INFO) " + technology.getName() + " technology for this project has all code and tests already completed.\n");
+            return;
+        }
 
-                prj.showAllTechnologies();
-                System.out.println("[Type a number of a technology to TEST code for. Or type 0 to cancel. Then Press Enter.]");
+        // check if tech is Mobile - player can't work on this, need to hire someone else
+        if (technology.getName().equals("Mobile")){
+            System.out.println("(INFO) You can't work on Mobile technology. You need to get a contractor or hire a programmer.\n");
+            return;
+        }
 
-                while(true){
-                    ch = Tool.getKey();
-                    if (ch == '0') return;
-
-                    int selectedTechNum = Character.getNumericValue(ch);
-                    if (selectedTechNum >= 1 && selectedTechNum <= prj.getTechnologies().size()){
-
-                        Technology tech = prj.getTechnologies().get(selectedTechNum - 1);
-
-                        // check if tech is Mobile - player can't work on this, need to hire someone else
-                        if (tech.getName().equals("Mobile")){
-                            System.out.println("(INFO) You can't work on Mobile technology. You need to get a contractor or hire a programmer.\n");
-                            continue;
-                        }
-
-                        // check if tests are equal to number of work days
-                        if (tech.getTestDaysDone() >= tech.getCodeDaysDone()) {
-                            System.out.println("(INFO) The code for this technology has been already tested.\n");
-                            continue;
-                        }
-
-                        tech.setTestDaysDonePlus(1);
-                        System.out.println("(INFO) You spent one day on TESTING the code for " + tech.getName() + " tech for " + prj.getName() + " project.\n");
-                        advanceNextDay();
-                        return;
-                    }
-                }
+        // MENU: WORK TYPE LEVEL
+        System.out.println("On what type of work you want to focus on with " + technology.getName() + " technology?\n");
+        System.out.println("\t1. Programming     2. Testing\n");
+        System.out.println("[Type a number of your work choice. Or type 0 to cancel. Then Press Enter.]");
+        while (workType == null){
+            switch (Tool.getKey()){
+                case '0': return;
+                case '1': workType = "code"; break;
+                case '2': workType = "test"; break;
             }
+        }
+
+        if (workType.equals("code")){
+
+            // if code is completed there's no point to work on it anymore
+            if (technology.isCodeCompleted()){
+                System.out.println("(INFO) " + project.getName() + " project has code already completed.\n");
+                return;
+            }
+
+            // check if tech is not assigned to contractor (player can't work on this)
+            if (technology.isContractorAssigned()){
+                System.out.println("(INFO) There's a contractor who works on this technology. You can't code it.\n");
+                return;
+            }
+
+            // if player can actually work on tech
+            technology.setCodeDaysDonePlus(1);
+
+            // player has a chance of "lucky test day"
+            // when the code is so good that free test day for that tech is received automatically
+            technology.setLuckyTestDayForPlayer();
+
+            System.out.println("(INFO) You spent one day on CODING for " + technology.getName() + " tech for " + project.getName() + " project.\n");
+            advanceNextDay();
+            return;
+        }
+
+        if (workType.equals("test")){
+
+            // if no code, no tests
+            if (technology.getCodeDaysDone() == 0){
+                System.out.println("(INFO) No code for " + technology.getName() + " technology was written. There's nothing to test for.\n");
+                return;
+            }
+
+            // if days of tests are equal to code days
+            // this indicates all written code has already been tested
+            if (technology.getTestDaysDone() >= technology.getCodeDaysDone()){
+                System.out.println("(INFO) All code for " + technology.getName() + " technology has been already tested.\n");
+                return;
+            }
+
+            technology.setTestDaysDonePlus(1);
+            System.out.println("(INFO) You spent one day on TESTING the code for " + technology.getName() + " tech for " + project.getName() + " project.\n");
+            advanceNextDay();
         }
     }
 
@@ -264,49 +252,115 @@ public class Game {
             return;
         }
 
+        Project project = null;
+        char key;
+        int selectedNum;
+
+        // MENU: PROJECT SELECTION LEVEL
         System.out.println("COMPANY'S PROJECTS:\n");
         company.showAllProjects();
         System.out.println("[Type a number of a project you would like to RETURN to client. Or type 0 for cancel. Then press Enter.]");
 
-        Project prj;
-        while (true) {
-            char ch = Tool.getKey();
-            if (ch == '0') return;
+        while (project == null) {
+            key = Tool.getKey();
+            if (key == '0') return;
 
-            int selectedProjectNum = Character.getNumericValue(ch);
-            if ((selectedProjectNum >= 1 && selectedProjectNum <= company.getProjects().size()) == false)
+            selectedNum = Character.getNumericValue(key);
+            if (!(selectedNum >= 1 && selectedNum <= company.getProjects().size()))
                 continue;
 
-            prj = company.getProjects().get(selectedProjectNum - 1);
+            project = company.getProjects().get(selectedNum - 1);
+        }
 
-            StringBuilder sb = new StringBuilder("PROJECT'S DETAILS:\n");
-            prj.showProjectDetails(currentDate);
+        // MENU: CONFIRMATION LEVEL
+        System.out.println("PROJECT'S DETAILS:\n");
+        project.showProjectDetails(currentDate);
+        System.out.println("\n[Do you really want to return this project to client?] [y/n]");
+        do {
+            key = Tool.getKey();
+            if (key == 'n') return;
+        } while (key != 'y');
 
-            System.out.println("\n[Do you really want to return this project to client?] [y/n]");
-            while (true) {
-                ch = Tool.getKey();
-                if (ch == 'n') return;
+        // HANDLE THINGS CAUSED BY RETURN OF THE PROJECT
+        project.setReturnDate(currentDate);
+        company.addToReturnedProjects(project);
+        company.removeProject(project);
 
-                if (ch == 'y'){
-                    prj.setReturnDate(currentDate);
-                    company.addToReturnedProjects(prj);
-                    company.removeProject(prj);
+        // DEAL WITH CONTRACTORS (payment, release)
 
-                    // deal with contractors (payment, release)
+        for (Technology technology:project.getTechnologies())
+            if (technology.isContractorAssigned()){
+                // payment for contractor
+                String description = "Payment for " + technology.getContractor().getName() + ". Tech: " + technology.getName()
+                        + ". Project: " + project.getName() + ". Work days: " + technology.getContractorWorkDays() + ".";
+                company.addTransactionOut(new Transaction(technology.getContractorCost(), currentDate.plusDays(Conf.CONTRACTORS_PAY_AFTER_DAYS), description));
 
-                    // check whether client will pay, if yes then calculate the date of payment
-                    if ((prj.getCodeCompletionPercent() > Conf.PROJECT_PERCENT_COMPLETION_MIN_ACCEPT_THRESHOLD)
-                        ){
-
-                    }
-
-                    // calculate clients payment (project's price - penalties + bonuses if any)
-
-
-                    advanceNextDay();
-                    return;
-                }
+                // add contractor to available contractors global group
+                // and remove contractor from current tech
+                contractors.add(technology.getContractor());
+                technology.removeContractor();
             }
+
+
+        // DEAL WITH CLIENTS
+        boolean willPay = false;
+
+        // PART 1/2: check whether client will pay
+
+        // by default project needs to be completed at 75% or more
+        // otherwise no client will ever pay for it, and the contract is lost
+        if (project.getCompletionPercent() < Conf.PROJECT_PERCENT_COMPLETION_MIN_ACCEPT_THRESHOLD){
+            System.out.println("(INFO) Unfortunately, the returned project has been completed in less than 75%. Client will not pay for it. This contract is lost.\n");
+            advanceNextDay();
+            return;
+        }
+
+        // if project is at decent state (75% or more) but not fully finished
+        // payment will depend on the chance generated by the start of the project
+        if (project.getCompletionPercent() >= Conf.PROJECT_PERCENT_COMPLETION_MIN_ACCEPT_THRESHOLD && project.getCompletionPercent() < 100) {
+            if (project.isProblemFromNotWorkingProject()){
+                System.out.println("(INFO) Unfortunately, the client decided to cancel the contract, because project was not completed. There will be no any payment.");
+                advanceNextDay();
+                return;
+            } else
+                willPay = true;
+        }
+
+        // project is fully completed
+        if (project.getCompletionPercent() >= 100) {
+            if (project.isPaymentNever()){
+                // if clients has such trait as "will never pay" then this is an outcome for it
+                // player is notified that the project is returned, but no payment (transaction) will be ever made
+                System.out.println("(INFO) Project '" + project.getName() + "' has been returned to client.\n");
+                advanceNextDay();
+                return;
+            } else
+                willPay = true;
+        }
+
+        // PART 2/2: calculate clients payment (date, project's price - penalties + bonuses if any)
+
+        if (willPay){
+
+            double money = project.getPrice();
+            LocalDate date = currentDate.plusDays(project.getPaymentDaysDue() + project.getPaymentDelayDays());
+            String desc = "Payment for '" + project.getName() + "' project from " + project.getClient().getName() + ".";
+
+            // money to pay can change if project is delayed
+            int delayDays = project.getDaysOfDelay(currentDate);
+            if (delayDays > 0) {
+                if (delayDays <= 7)
+                    money -= project.getPenaltyPrice();
+                else
+                    money -= project.getPenaltyPrice() * 2.0;
+                System.out.println("(INFO) Project has been delayed by days: " + delayDays + ". The price client will pay will be lower, as penalty for the delay will be deducted from it.\n");
+            }
+
+            company.addTransactionIn(new Transaction(money, date, desc));
+            System.out.println("(INFO) Project '" + project.getName() + "' has been returned to " + project.getClient().getName()
+                    + ". Expected payment within " + project.getPaymentDaysDue() + " days: " + money + "\n");
+
+            advanceNextDay();
         }
     }
 
@@ -322,7 +376,7 @@ public class Game {
         Contractor contractor = null;
         Project project = null;
         Technology technology = null;
-        int selectedNum = 0;
+        int selectedNum;
         char key;
 
         // MENU: CONTRACTORS LEVEL
@@ -334,25 +388,25 @@ public class Game {
             selectedNum = Character.getNumericValue(key);
             if (selectedNum >= 1 && selectedNum <= contractors.size()) {
                 contractor = contractors.get(selectedNum - 1);
-                company.showAllProjects();
-                System.out.println("[Type number of project you want contractor to work on. Type 0 for cancel. Then Press Enter.]");
             }
         }
 
         // MENU: PROJECTS LEVEL
-        while(contractor != null && project == null) {
+        company.showAllProjects();
+        System.out.println("[Type number of project you want contractor to work on. Type 0 for cancel. Then Press Enter.]");
+        while(project == null) {
             key = Tool.getKey();
             if (key == '0') return;
             selectedNum = Character.getNumericValue(key);
             if (selectedNum >= 1 && selectedNum <= company.getProjects().size()) {
                 project = company.getProjects().get(selectedNum - 1);
-                project.showAllTechnologies();
-                System.out.println("[Type number of technology you want contractor to work on. Type 0 for cancel. Then Press Enter.]");
             }
         }
 
         // MENU: TECHNOLOGY LEVEL
-        while(project != null && technology == null) {
+        project.showAllTechnologies();
+        System.out.println("[Type number of technology you want contractor to work on. Type 0 for cancel. Then Press Enter.]");
+        while(technology == null) {
             key = Tool.getKey();
             if (key == '0') return;
             selectedNum = Character.getNumericValue(key);
@@ -372,7 +426,7 @@ public class Game {
                 }
 
                 // check if contractor has required skill
-                if (contractor.getSkills().contains(technology.getName()) == false){
+                if (!contractor.getSkills().contains(technology.getName())){
                     System.out.println("(INFO) Contractor " + contractor.getName() + " doesn't know " + technology.getName() + " technology.\n");
                     continue;
                 }
@@ -389,10 +443,15 @@ public class Game {
 
 
     public void advanceNextDay(){
-        company.processContractorsDailyWork();
+
+        // contractors and workers don't work during weekends
+        if (currentDate.getDayOfWeek().getValue() < 6){
+            company.processContractorsDailyWork();
+        }
+
         company.processContractorsFinishedWork(currentDate, contractors);
 
-        System.out.println(company.getTransactionsOut().toString());
+        //System.out.println(company.getTransactionsOut().toString());
 
         currentDate = currentDate.plusDays(1);
         showSummary();
