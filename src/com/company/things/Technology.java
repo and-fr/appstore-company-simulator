@@ -3,6 +3,7 @@ package com.company.things;
 import com.company.assets.Conf;
 import com.company.assets.Tool;
 import com.company.people.Contractor;
+import com.company.people.Employee;
 
 
 public class Technology {
@@ -81,7 +82,6 @@ public class Technology {
     public Boolean isFinished() { return (codeDaysDone >= codeDaysNeeded) && (testDaysDone >= codeDaysNeeded); }
     public Double getContractorCost() { return (double) (contractorCodeDays + contractorTestDays) * 8.0 * contractor.getPayForHour(); }
     public Integer getContractorWorkDays() { return contractorCodeDays + contractorTestDays; }
-
 
 
     // SETTERS

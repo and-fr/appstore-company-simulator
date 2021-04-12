@@ -2,8 +2,10 @@ package com.company.things;
 
 import com.company.assets.Conf;
 import com.company.assets.Tool;
+import com.company.people.Client;
 import com.company.people.Contractor;
-import com.company.people.Person;
+import com.company.people.Employee;
+
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -16,11 +18,11 @@ public class Company {
 
     private Double money;
     private Boolean hasOffice;
-    private final List<Project> projects = new ArrayList<>();
-    private final List<Project> returnedProjects = new ArrayList<>();
-    private final List<Person> employees = new ArrayList<>();
-    private final List<Transaction> transactionsIn = new ArrayList<>();
-    private final List<Transaction> transactionsOut = new ArrayList<>();
+    private final List<Project> projects;
+    private final List<Project> returnedProjects;
+    private final List<Employee> employees;
+    private final List<Transaction> transactionsIn;
+    private final List<Transaction> transactionsOut;
 
 
     // CONSTRUCTORS
@@ -28,17 +30,118 @@ public class Company {
     public Company(){
         money = Conf.START_MONEY;
         hasOffice = Conf.START_COMPANY_HAS_OFFICE;
+        projects = new ArrayList<>();
+        returnedProjects = new ArrayList<>();
+        employees = new ArrayList<>();
+        transactionsIn = new ArrayList<>();
+        transactionsOut = new ArrayList<>();
     }
 
 
     // GETTERS
 
     public Double getMoney() { return money; }
-    public Boolean getHasOffice() { return hasOffice; }
+    public Boolean hasOffice() { return hasOffice; }
     public List<Project> getProjects(){ return projects; }
-    public List<Person> getEmployees(){ return employees; }
+    public List<Employee> getEmployees(){ return employees; }
     public List<Transaction> getTransactionsIn(){ return transactionsIn; }
     public List<Transaction> getTransactionsOut(){ return transactionsOut; }
+
+    public List<Employee> getTesters(){
+        List<Employee> testers = new ArrayList<>();
+        for (Employee employee:employees)
+            if (employee.isTester()) testers.add(employee);
+        return testers;
+    }
+
+    public List<Employee> getSellers(){
+        List<Employee> sellers = new ArrayList<>();
+        for (Employee employee:employees)
+            if (employee.isSeller()) sellers.add(employee);
+        return sellers;
+    }
+
+
+    public List<Employee> getProgrammers(){
+        List<Employee> programmers = new ArrayList<>();
+        for (Employee employee:employees)
+            if (employee.isProgrammer()) programmers.add(employee);
+        return programmers;
+    }
+
+
+    private List<Project> getProjectsWithTesters(){
+        List<Project> projects = new ArrayList<>();
+        for (Project project:this.projects)
+            if (project.isTesterAssigned())
+                projects.add(project);
+        return projects;
+    }
+
+
+    private List<Project> getProjectsWithProgrammers(){
+        List<Project> projects = new ArrayList<>();
+        for (Project project:this.projects)
+            if (project.getProgrammers().size() > 0)
+                projects.add(project);
+        return projects;
+    }
+
+
+    public Project getProjectTesterIsAssignedTo(Employee tester){
+        for(Project project:projects)
+            if (project.getTester() != null)
+                if (project.getTester().equals(tester)) return project;
+        return null;
+    }
+
+
+    public Project getProjectProgrammerIsAssignedTo(Employee programmer){
+        for(Project project:projects)
+            if (project.getProgrammers().size() > 0)
+                for(Employee employee:project.getProgrammers())
+                    if (employee.equals(programmer)) return project;
+        return null;
+    }
+
+
+    public void showEmployeesStatus(){
+        Project project;
+
+        System.out.println("COMPANY'S EMPLOYEES\n-------------------");
+
+        System.out.println("PROGRAMMERS:");
+        for (Employee programmer:getProgrammers()){
+            System.out.print("\t" + programmer.getName());
+            project = getProjectProgrammerIsAssignedTo(programmer);
+            if (project == null)
+                System.out.print(" (UNASSIGNED)");
+            else
+                System.out.print(" (works on " + project.getName() + " project)");
+            System.out.print(", skills: ");
+            for(String skill:programmer.getSkills())
+                System.out.print(skill + " ");
+            System.out.println();
+        }
+
+        System.out.println("TESTERS:");
+        for (Employee tester:getTesters()){
+            System.out.print("\t" + tester.getName());
+            project = getProjectTesterIsAssignedTo(tester);
+            if (project == null)
+                System.out.print(" (UNASSIGNED)");
+            else
+                System.out.print(" (works on " + project.getName() + " project)");
+            System.out.println();
+        }
+
+        System.out.println("SELLERS:");
+        for (Employee seller:getSellers())
+            System.out.println("\t" + seller.getName());
+
+        System.out.println("-------------------\n");
+    }
+
 
 
     // SETTERS
@@ -47,13 +150,32 @@ public class Company {
     public void addProject(Project project){ projects.add(project); }
     public void removeProject(Project project){ projects.remove(project); }
     public void addToReturnedProjects(Project project){ returnedProjects.add(project); }
-    public void addEmployee(Person employee){ employees.add(employee); }
+    public void addEmployee(Employee employee){ employees.add(employee); }
     public void setHasOffice(Boolean hasOffice) { this.hasOffice = hasOffice; }
     public void addTransactionIn(Transaction transaction) { this.transactionsIn.add(transaction); }
     public void addTransactionOut(Transaction transaction) { this.transactionsOut.add(transaction); }
+    public void removeMoney(double money) { this.money -= money; }
+    public void removeEmployee(Employee employee) { employees.remove(employee); }
 
 
     // OTHER METHODS
+
+
+    public void removeTesterFromAnyProjects(Employee tester){
+        for(Project project:projects)
+            if (project.getTester() != null)
+                if (project.getTester().equals(tester))
+                    project.removeTester();
+    }
+
+
+    public void removeProgrammerFromAnyProjects(Employee programmer){
+        for(Project project:projects)
+            for(Employee employee:project.getProgrammers())
+                if (employee.equals(programmer))
+                    project.removeProgrammer(programmer);
+    }
+
 
     public void showAllProjects(){
         StringBuilder sb = new StringBuilder();
@@ -62,11 +184,18 @@ public class Company {
             sb.append("\t").append(++count).append(".");
             sb.append(" | ").append(prj.getName()).append(" for ").append(prj.getClient().getName());
             sb.append(" | price: ").append(prj.getPrice()).append(" | deadline: ").append(prj.getDeadline());
+            if (prj.getProgrammers().size() > 0){
+                sb.append(" | programmers: ");
+                for(Employee programmer:prj.getProgrammers())
+                    sb.append(programmer.getName()).append(" ");
+            }
+            if (prj.getTester() != null)
+                sb.append(" | tester: ").append(prj.getTester().getName());
             sb.append("\n\t\t techs: ");
             for (Technology tech : prj.getTechnologies()) {
                 sb.append(tech.getName()).append(" (code ").append(tech.getCodeDaysDone()).append("/");
-                sb.append(tech.getCodeDaysNeeded()).append(", tests: ").append(tech.getTestDaysDone()).append("/");
-                sb.append(tech.getCodeDaysDone()).append((tech.isContractorAssigned() ? ", contractor" : "")).append("); ");
+                sb.append(tech.getCodeDaysNeeded()).append(", tests: ").append(tech.getTestDaysDone()).append("/").append(tech.getCodeDaysDone());
+                sb.append((tech.isContractorAssigned() ? ", contractor" : "")).append("); ");
             }
             sb.append("\n");
         }
@@ -159,6 +288,67 @@ public class Company {
                         // and remove contractor from current tech
                         contractors.add(contractor);
                         tech.removeContractor();
+                    }
+                }
+    }
+
+
+    public void processSellersDailyWork(List<Project> projects, List<Client> clients){
+        for (Employee seller:getSellers()){
+            seller.setSearchDaysForClientsPlus(1);
+            if (seller.getSearchDaysForClients() >= 5){
+                seller.resetSearchDays();
+                Project project = new Project(new Client());
+                project.setSeller(seller);
+                projects.add(project);
+                System.out.println("(INFO) Seller, " + seller.getName() + " has negotiated a new potential project. Check 'New projects' option.\n");
+            }
+        }
+    }
+
+
+    public void processTestersDailyWork(){
+        System.out.println("TEST");
+        for (Project project:getProjectsWithTesters()){
+            for (Technology technology:project.getTechnologies()){
+                if (technology.getTestDaysDone() < technology.getCodeDaysDone()){
+                    technology.setTestDaysDonePlus(1);
+                    System.out.println("(INFO) Tester, " + project.getTester().getName() +
+                            " has worked on " + technology.getName() + " technology for " + project.getName() + " project.\n");
+                }
+                // testers have a chance to work on additional tests for other technologies at the same day
+                if (Tool.randInt(1,100) > Conf.TESTER_ADDITIONAL_TESTS_CHANCE)
+                    break;
+            }
+        }
+    }
+
+
+    public void processProgrammersDailyWork(){
+        Technology technology;
+
+        for (Project project:getProjectsWithProgrammers())
+            for(Employee programmer:project.getProgrammers())
+                for(String skill:programmer.getSkills()) {
+                    if (project.hasTech(skill)) {
+                        technology = project.getTechWithName(skill);
+                        if (technology == null) break;
+
+                        if (technology.getCodeDaysDone() < technology.getCodeDaysNeeded()){
+                            technology.setCodeDaysDonePlus(1);
+                            System.out.println("(INFO) Programmer, " + programmer.getName()
+                                    + " has CODED " + technology.getName() + " technology for "
+                                    + project.getName() + " project.\n");
+                            break;
+                        }
+
+                        if (technology.getTestDaysDone() < technology.getCodeDaysDone()){
+                            technology.setTestDaysDonePlus(1);
+                            System.out.println("(INFO) Programmer, " + programmer.getName()
+                                    + " has TESTED " + technology.getName() + " technology for "
+                                    + project.getName() + " project.\n");
+                            break;
+                        }
                     }
                 }
     }

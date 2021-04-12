@@ -4,6 +4,7 @@ import com.company.assets.Tool;
 import com.company.assets.Conf;
 import com.company.assets.Lang;
 import com.company.people.Client;
+import com.company.people.Employee;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -21,9 +22,13 @@ public class Project {
     private final Boolean isPaymentNever;
     private final Boolean isPenaltyAvoidedWithinWeekOfDelay;
     private final Boolean isProblemFromNotWorkingProject;
+    private Boolean isPlayerInvolved;
     private LocalDate startDate;
     private LocalDate returnDate;
     private final Integer totalWorkDaysNeeded;
+    private Employee seller;
+    private Employee tester;
+    private List<Employee> programmers;
 
 
     // CONSTRUCTORS
@@ -37,12 +42,19 @@ public class Project {
         isPaymentNever = calculatePaymentNever();
         isPenaltyAvoidedWithinWeekOfDelay = calculatePenaltyAvoidedWithinWeekOfDelay();
         isProblemFromNotWorkingProject = calculateProblemFromNotWorkingProject();
+        seller = null;
+        tester = null;
+        programmers = new ArrayList<>();
+        isPlayerInvolved = false;
     }
 
 
     // GETTERS
 
     public Client getClient() { return client; }
+    public Employee getSeller() { return seller; }
+    public Employee getTester() { return tester; }
+    public List<Employee> getProgrammers() { return programmers; }
     public String getName() { return name; }
     public List<Technology> getTechnologies(){ return technologies; }
     public Integer getPaymentDelayDays() { return paymentDelayDays; }
@@ -50,7 +62,9 @@ public class Project {
     public Boolean isPenaltyAvoidedWithinWeekOfDelay() { return isPenaltyAvoidedWithinWeekOfDelay; }
     public Boolean isProblemFromNotWorkingProject() { return isProblemFromNotWorkingProject; }
     public LocalDate getStartDate() { return startDate; }
-    public Integer getTotalWorkDaysNeeded(){ return totalWorkDaysNeeded; }
+    public Integer getTotalWorkDaysNeeded() { return totalWorkDaysNeeded; }
+    public Boolean isNegotiatedBySeller() { return seller != null; }
+    public Boolean isPlayerInvolved() { return isPlayerInvolved; }
 
     public LocalDate getDeadline() {
         // deadline date is calculated from start date
@@ -160,6 +174,16 @@ public class Project {
     }
 
 
+    public Boolean isTesterAssigned() {
+        return tester != null;
+    }
+
+    public Boolean isProgrammerAssigned(Employee programmer) {
+        for(Employee employee:programmers)
+            if (employee.equals(programmer)) return true;
+        return false;
+    }
+
 
     public Integer getCodeCompletionPercent(){
         return (int) (((double)getCodeDaysDone() / (double)getCodeDaysNeeded()) * 100.0);
@@ -181,10 +205,32 @@ public class Project {
     }
 
 
+    public Boolean hasTech(String name){
+        for(Technology tech:technologies)
+            if (tech.getName().equals(name))
+                return true;
+        return false;
+    }
+
+
+    public Technology getTechWithName(String name){
+        for(Technology technology:technologies)
+            if (technology.getName().equals(name))
+                return technology;
+        return null;
+    }
+
+
     // SETTERS
 
+    public void addProgrammer(Employee programmer) { programmers.add(programmer); }
     public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
     public void setReturnDate(LocalDate returnDate) { this.returnDate = returnDate; }
+    public void setSeller(Employee seller) { this.seller = seller; }
+    public void setTester(Employee tester) { this.tester = tester; }
+    public void setPlayerAsInvolved() { isPlayerInvolved = true; }
+    public void removeTester() { tester = null; }
+    public void removeProgrammer(Employee programmer) { programmers.remove(programmer); }
 
 
     // OTHER METHODS

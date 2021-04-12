@@ -1,6 +1,9 @@
 package com.company;
 
 import com.company.assets.Tool;
+import com.company.people.Client;
+import com.company.people.Employee;
+import com.company.things.Project;
 
 
 public class Main {
@@ -8,6 +11,17 @@ public class Main {
     public static void main(String[] args) {
 
         Game game = new Game();
+
+        // TEST CODE START
+        Project project;
+        for(int i=1; i<=7; i++){
+            project = new Project(new Client());
+            project.setStartDate(game.getCurrentDate());
+            game.getCompany().addProject(project);
+        }
+        for(int i=1; i<=7; i++)
+            game.getCompany().addEmployee(new Employee());
+        // TEST CODE END
 
         game.showSummary();
         while(true){
@@ -32,6 +46,7 @@ public class Main {
                     game.optionContractors();
                     break;
                 case '6': // employees
+                    game.optionEmployees();
                     break;
                 case '7': // company tasks
                     break;
