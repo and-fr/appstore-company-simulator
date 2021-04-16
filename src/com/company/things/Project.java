@@ -6,6 +6,7 @@ import com.company.assets.Lang;
 import com.company.people.Client;
 import com.company.people.Employee;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -29,6 +30,8 @@ public class Project {
     private Employee seller;
     private Employee tester;
     private List<Employee> programmers;
+    private Double price;
+    private Double priceBonus;
 
 
     // CONSTRUCTORS
@@ -46,6 +49,8 @@ public class Project {
         tester = null;
         programmers = new ArrayList<>();
         isPlayerInvolved = false;
+        price = generatePrice();
+        priceBonus = 0.0;
     }
 
 
@@ -72,7 +77,12 @@ public class Project {
         return startDate.plusDays((long)totalWorkDaysNeeded);
     }
 
-    public Double getPrice(){
+
+    public Double getPrice() { return price + priceBonus; }
+    public Double getPriceBonus() { return priceBonus; }
+
+
+    public Double generatePrice(){
         // calculates price for project (code days & test days for all techs * 8 hours * pay4hour)
 
         double payForWorkDay = Conf.PAY_FOR_HOUR * 8.0;
@@ -354,6 +364,18 @@ public class Project {
         sb.append("OVERALL: ").append(getCompletionPercent()).append("%");
 
         System.out.println(sb);
+    }
+
+
+    public void negotiatePriceBonus(){
+        // if seller found a project, the seller is able to negotiate a better price for it
+        if (seller != null){
+            int min = 0;
+            int max = new BigDecimal(String.valueOf(seller.getPayForHourBonus())).intValue();
+            int percent = Tool.randInt(min, max);
+            int priceOfOnePercent = (int) (price / 100.0);
+            priceBonus += (double) (priceOfOnePercent * percent);
+        }
     }
 
 }

@@ -12,10 +12,13 @@ import com.company.people.Client;
 import com.company.things.Transaction;
 
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Scanner;
 
 
 public class Game {
@@ -30,6 +33,7 @@ public class Game {
     private final Company company;
     private Integer searchDaysForClients;
     private Integer searchDaysForEmployees;
+    private Boolean isEmployeePaymentTime;
 
 
     // CONSTRUCTORS
@@ -44,6 +48,7 @@ public class Game {
         currentDate = Conf.START_DATE;
         searchDaysForClients = 0;
         searchDaysForEmployees = 0;
+        isEmployeePaymentTime = true;
 
         generateInitialClients();
         generateInitialProjects();
@@ -62,7 +67,7 @@ public class Game {
     public void showSummary(){
         StringBuilder summary = new StringBuilder();
         summary.append("DAY ").append(getDayNumber()).append(" (").append(currentDate).append(" ").append(currentDate.getDayOfWeek()).append(") | ");
-        summary.append("MONEY: ").append(company.getMoney()).append(" | ");
+        summary.append("MONEY: ").append(new BigDecimal(company.getMoney()).toPlainString()).append(" | ");
         summary.append("PROJECTS: ").append(company.getProjects().size()).append(" | ");
         summary.append("OFFICE: ").append(company.hasOffice() ? "yes" : "no").append(" | ");
         summary.append("EMPLOYEES: ").append(company.getEmployees().size()).append(" | ");
@@ -104,7 +109,8 @@ public class Game {
                 for (Technology tech : pr.getTechnologies())
                     menu.append(tech.getName()).append(" ");
                 menu.append("| work days: ").append(pr.getTotalWorkDaysNeeded());
-                if (pr.isNegotiatedBySeller()) menu.append(" | NEGOTIATED BY ").append(pr.getSeller().getName());
+                if (pr.isNegotiatedBySeller())
+                    menu.append(" | NEGOTIATED BY ").append(pr.getSeller().getName()).append(" (price: +").append(pr.getPriceBonus()).append(")");
                 menu.append("\n");
             }
         } else {
@@ -477,7 +483,7 @@ public class Game {
         System.out.println("EMPLOYEES\n");
         System.out.println("\t1. View employees     2. Hire an employee     3. Fire an employee     4. Search for employees (cost: "
                 + Conf.SEARCH_FOR_EMPLOYEES_COST + ")");
-        System.out.println("\t5. Assign testers to projects                 6. Assign programmers to technologies\n");
+        System.out.println("\t5. Assign testers to projects                 6. Assign programmers to projects\n");
         System.out.println("[Type a number of an option. Or 0 to cancel. Then press Enter.]");
         int selectedNum;
         while(true) {
@@ -564,7 +570,7 @@ public class Game {
         char key;
         int count = 0;
         int selectedNum;
-        Employee selectedEmployee = null;
+        Employee selectedEmployee;
 
         System.out.println("COMPANY'S EMPLOYEES:\n");
         for(Employee employee: company.getEmployees())
@@ -584,6 +590,10 @@ public class Game {
         }
 
         // employee firing process
+        if (selectedEmployee.isProgrammer())
+            company.removeProgrammerFromAnyProjects(selectedEmployee);
+        if (selectedEmployee.isTester())
+            company.removeTesterFromAnyProjects(selectedEmployee);
         company.removeEmployee(selectedEmployee);
         System.out.println("(INFO) You fired a " + selectedEmployee.getEmployeeRole().toLowerCase()
                 + ", " + selectedEmployee.getName() + ".\n");
@@ -688,7 +698,7 @@ public class Game {
 
         // MENU: PROGRAMMERS CHOICE LEVEL
         int count = 0;
-        Project prj = null;
+        Project prj;
         System.out.println("COMPANY'S PROGRAMMERS:\n");
         for(Employee programmer:company.getProgrammers()) {
             prj = company.getProjectProgrammerIsAssignedTo(programmer);
@@ -741,8 +751,117 @@ public class Game {
     }
 
 
+    public void optionCompanyTasks(){
+        System.out.println("COMPANY, TASKS\n");
+        System.out.print("\t1. Approve payments     2. View approved payments status");
+        if (!company.hasOffice())
+            System.out.print("     3. Rent an office (monthly cost: " + Conf.OFFICE_MONTHLY_COST + ")");
+        System.out.println("\n\n[Type a number of an option, or type 0 for cancel. Then press Enter.]");
+
+        while(true){
+            switch(Tool.getKey()){
+                case '0': return;
+                case '1': optionCompanyTaskApprovePayments(); return;
+                case '2': optionCompanyTaskViewApprovedPayments(); return;
+                case '3':
+                    if (!company.hasOffice()) {
+                        optionCompanyTaskRentOffice();
+                        advanceNextDay();
+                        return;
+                    }
+            }
+        }
+    }
+
+
+    private void optionCompanyTaskApprovePayments(){
+
+        if (company.getUnapprovedTransactions().size() == 0){
+            System.out.println("(INFO) There are no any unapproved transactions today.\n");
+            return;
+        }
+
+        System.out.println("COMPANY'S UNAPPROVED PAYMENTS:\n");
+        int count = 0;
+        for(Transaction tr:company.getUnapprovedTransactions())
+           System.out.println(++count + ". " + tr.getDescription() + " | " + tr.getMoney() + " | " + tr.getProcessDate());
+        System.out.println("\n[Type numbers separated by coma of transactions you want to approve. Type all to approve all transactions. Or type 0 for cancel. Then press Enter.]");
+
+        List<Integer> transactionNumbersToApprove = new ArrayList<>();
+        Scanner sc = new Scanner(System.in);
+        String input = sc.next();
+        switch (input){
+            case "0": return;
+
+            // approve all transactions
+            case "all":
+                for(Transaction tr:company.getUnapprovedTransactions())
+                    tr.setAsApproved();
+                System.out.println("(INFO) You approved all pending transactions.\n");
+                advanceNextDay();
+                break;
+
+            // process selected transactions
+            default:
+                String[] inputValues = input.split(",");
+                int num;
+                for(int i = 0; i < inputValues.length; i++){
+                    num = Integer.parseInt(inputValues[i]);
+                    if (num > 0 && num <= company.getUnapprovedTransactions().size())
+                        transactionNumbersToApprove.add(num);
+                }
+
+        }
+
+        if (transactionNumbersToApprove.size() == 0){
+            System.out.println("(INFO) No valid numbers of transactions have been provided.\n");
+            return;
+        }
+
+        // approve selected transactions
+        StringBuilder sb = new StringBuilder("[Selected transactions: ");
+        for(int trNum:transactionNumbersToApprove)
+            sb.append(trNum).append(" ");
+        sb.append("Approve? y/n]");
+        System.out.println(sb);
+
+        while (true){
+            switch (Tool.getKey()){
+                case 'n': return;
+                case 'y':
+                    StringBuilder sbNumbers = new StringBuilder("(INFO) You approved transactions: ");
+                    transactionNumbersToApprove.sort(Collections.reverseOrder());
+                    for(int num:transactionNumbersToApprove){
+                        company.getUnapprovedTransactions().get(num - 1).setAsApproved();
+                        sbNumbers.append(num).append(" ");
+                    }
+                    sbNumbers.append("\n");
+                    System.out.println(sbNumbers);
+                    advanceNextDay();
+                    return;
+            }
+        }
+    }
+
+
+    private void optionCompanyTaskViewApprovedPayments(){
+        System.out.println("APPROVED PAYMENTS STATUS:\n");
+        int count = 0;
+        for(Transaction tr:company.getApprovedTransactions())
+            System.out.println("\t" + ++count + ". " + tr.getDescription() + " | " + tr.getMoney() + " | " + tr.getProcessDate());
+        System.out.println();
+    }
+
+
+    private void optionCompanyTaskRentOffice(){
+        company.setOfficeRentMonthlyPayDayNumber(currentDate.getDayOfMonth());
+        company.setHasOffice(true);
+        System.out.println("(INFO) You rented office for your company.\n");
+    }
+
+
     private void addEmployee(Employee employee){
-        if (employees.size() >= 9) employees.remove(0);
+        if (employees.size() >= Conf.MAX_AVAILABLE_EMPLOYEES) employees.remove(0);
         employees.add(employee);
     }
 
@@ -797,15 +916,43 @@ public class Game {
 
     public void advanceNextDay(){
 
+        // PEOPLE WORK
         // contractors and employees don't work during weekends
         if (currentDate.getDayOfWeek().getValue() < 6){
-            company.processContractorsDailyWork();
             company.processSellersDailyWork(projects, clients);
             company.processTestersDailyWork();
+            company.processContractorsDailyWork();
             company.processProgrammersDailyWork();
         }
 
+
+        // PAYMENTS
         company.processContractorsFinishedWork(currentDate, contractors);
+
+        // on a first work day of each month employees' payments for past month are processed
+        if (isEmployeePaymentTime && currentDate.getDayOfMonth() <= 3 && currentDate.getDayOfWeek().getValue() < 6){
+            company.processEmployeesPayments(currentDate);
+            isEmployeePaymentTime = false;
+        }
+        if (currentDate.getDayOfMonth() == 4)
+            isEmployeePaymentTime = true;
+
+        // rent for office
+        if (currentDate.getDayOfMonth() == company.getOfficeRentMonthlyPayDayNumber())
+            company.addTransactionOut(new Transaction(
+                    Conf.OFFICE_MONTHLY_COST,
+                    currentDate.plusDays(Conf.OFFICE_RENT_PAY_AFTER_DAYS),
+                    "Office rent " + currentDate.getYear() + "/" + currentDate.getMonthValue()
+            ));
+
+
+
+        // test
+        System.out.println("ADVANCE NEXT DAY METHOD / TRANSACTIONS TEST");
+        for(Transaction tr:company.getTransactionsOut())
+            System.out.println(tr.getMoney() +" "+ tr.getProcessDate().toString() +" "+ tr.getDescription());
+        System.out.println();
+
 
         currentDate = currentDate.plusDays(1);
         showSummary();

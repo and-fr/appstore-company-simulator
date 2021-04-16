@@ -1,5 +1,6 @@
 package com.company.things;
 
+import com.company.Main;
 import com.company.assets.Conf;
 import com.company.assets.Tool;
 import com.company.people.Client;
@@ -8,6 +9,7 @@ import com.company.people.Employee;
 
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,6 +20,7 @@ public class Company {
 
     private Double money;
     private Boolean hasOffice;
+    private Integer officeRentMonthlyPayDayNumber;
     private final List<Project> projects;
     private final List<Project> returnedProjects;
     private final List<Employee> employees;
@@ -30,6 +33,7 @@ public class Company {
     public Company(){
         money = Conf.START_MONEY;
         hasOffice = Conf.START_COMPANY_HAS_OFFICE;
+        officeRentMonthlyPayDayNumber = 0;
         projects = new ArrayList<>();
         returnedProjects = new ArrayList<>();
         employees = new ArrayList<>();
@@ -46,6 +50,13 @@ public class Company {
     public List<Employee> getEmployees(){ return employees; }
     public List<Transaction> getTransactionsIn(){ return transactionsIn; }
     public List<Transaction> getTransactionsOut(){ return transactionsOut; }
+
+    public Integer getOfficeRentMonthlyPayDayNumber() {
+        // to simplify calculations in the code:
+        // if payDay was set to 29,30,31 the value of 28 is returned
+        // this avoids situations where transaction won't be generated for e.g. 30th of february, etc.
+        return Math.min(officeRentMonthlyPayDayNumber, 28);
+    }
 
     public List<Employee> getTesters(){
         List<Employee> testers = new ArrayList<>();
@@ -105,43 +116,20 @@ public class Company {
     }
 
 
-    public void showEmployeesStatus(){
-        Project project;
-
-        System.out.println("COMPANY'S EMPLOYEES\n-------------------");
-
-        System.out.println("PROGRAMMERS:");
-        for (Employee programmer:getProgrammers()){
-            System.out.print("\t" + programmer.getName());
-            project = getProjectProgrammerIsAssignedTo(programmer);
-            if (project == null)
-                System.out.print(" (UNASSIGNED)");
-            else
-                System.out.print(" (works on " + project.getName() + " project)");
-            System.out.print(", skills: ");
-            for(String skill:programmer.getSkills())
-                System.out.print(skill + " ");
-            System.out.println();
-        }
-
-        System.out.println("TESTERS:");
-        for (Employee tester:getTesters()){
-            System.out.print("\t" + tester.getName());
-            project = getProjectTesterIsAssignedTo(tester);
-            if (project == null)
-                System.out.print(" (UNASSIGNED)");
-            else
-                System.out.print(" (works on " + project.getName() + " project)");
-            System.out.println();
-        }
-
-        System.out.println("SELLERS:");
-        for (Employee seller:getSellers())
-            System.out.println("\t" + seller.getName());
-
-        System.out.println("-------------------\n");
+    public List<Transaction> getUnapprovedTransactions(){
+        List<Transaction> transactions = new ArrayList<>();
+        for(Transaction transaction:transactionsOut)
+            if (!transaction.isApproved()) transactions.add(transaction);
+        return transactions;
     }
 
+
+    public List<Transaction> getApprovedTransactions(){
+        List<Transaction> transactions = new ArrayList<>();
+        for(Transaction transaction:transactionsOut)
+            if (transaction.isApproved()) transactions.add(transaction);
+        return transactions;
+    }
 
 
     // SETTERS
@@ -156,9 +144,51 @@ public class Company {
     public void addTransactionOut(Transaction transaction) { this.transactionsOut.add(transaction); }
     public void removeMoney(double money) { this.money -= money; }
     public void removeEmployee(Employee employee) { employees.remove(employee); }
+    public void setOfficeRentMonthlyPayDayNumber(int day) { officeRentMonthlyPayDayNumber = day; }
 
 
     // OTHER METHODS
+
+
+    public void showEmployeesStatus(){
+        Project project;
+        StringBuilder sb = new StringBuilder("COMPANY'S EMPLOYEES\n-------------------\n");
+
+        sb.append("PROGRAMMERS:\n");
+        for (Employee programmer:getProgrammers()){
+            sb.append("\t").append(programmer.getName());
+            project = getProjectProgrammerIsAssignedTo(programmer);
+            if (project == null)
+                sb.append(" (UNASSIGNED)");
+            else
+                sb.append(" (works on ").append(project.getName()).append(" project)");
+            sb.append(" | skills: ");
+            for(String skill:programmer.getSkills())
+                sb.append(skill).append(" ");
+            sb.append("| salary: ").append(programmer.getMonthlySalary()).append("\n");
+        }
+
+        sb.append("TESTERS:\n");
+        for (Employee tester:getTesters()){
+            sb.append("\t").append(tester.getName());
+            project = getProjectTesterIsAssignedTo(tester);
+            if (project == null)
+                sb.append(" (UNASSIGNED)");
+            else
+                sb.append(" (works on ").append(project.getName()).append(" project)");
+            sb.append(" | salary: ").append(tester.getMonthlySalary()).append("\n");
+        }
+
+        sb.append("SELLERS:\n");
+        for (Employee seller:getSellers()){
+            sb.append("\t").append(seller.getName());
+            sb.append(" | salary: ").append(seller.getMonthlySalary()).append("\n");
+        }
+
+        sb.append("-------------------\n");
+
+        System.out.println(sb);
+    }
 
 
     public void removeTesterFromAnyProjects(Employee tester){
@@ -295,11 +325,17 @@ public class Company {
 
     public void processSellersDailyWork(List<Project> projects, List<Client> clients){
         for (Employee seller:getSellers()){
+
+            // sick sellers don't work
+            if (seller.isSick())
+                break;
+
             seller.setSearchDaysForClientsPlus(1);
             if (seller.getSearchDaysForClients() >= 5){
                 seller.resetSearchDays();
                 Project project = new Project(new Client());
                 project.setSeller(seller);
+                project.negotiatePriceBonus();
                 projects.add(project);
                 System.out.println("(INFO) Seller, " + seller.getName() + " has negotiated a new potential project. Check 'New projects' option.\n");
             }
@@ -308,8 +344,12 @@ public class Company {
 
 
     public void processTestersDailyWork(){
-        System.out.println("TEST");
         for (Project project:getProjectsWithTesters()){
+
+            // sick testers don't work
+            if (project.getTester().isSick())
+                break;
+
             for (Technology technology:project.getTechnologies()){
                 if (technology.getTestDaysDone() < technology.getCodeDaysDone()){
                     technology.setTestDaysDonePlus(1);
@@ -328,13 +368,29 @@ public class Company {
         Technology technology;
 
         for (Project project:getProjectsWithProgrammers())
-            for(Employee programmer:project.getProgrammers())
-                for(String skill:programmer.getSkills()) {
+            for(Employee programmer:project.getProgrammers()) {
+
+                // sick programmers don't work
+                if (programmer.isSick())
+                    break;
+
+                for (String skill : programmer.getSkills()) {
                     if (project.hasTech(skill)) {
                         technology = project.getTechWithName(skill);
                         if (technology == null) break;
 
-                        if (technology.getCodeDaysDone() < technology.getCodeDaysNeeded()){
+                        // if tech is worked by a contractor then programmers won't work on it
+                        if (technology.isContractorAssigned())
+                            break;
+
+                        // there is a chance programmer won't work at all this day
+                        if (programmer.getSkipDayPercentChance() > 0)
+                            if (Tool.randInt(1, 100) <= programmer.getSkipDayPercentChance()) {
+                                System.out.println("(INFO) Programmer, " + programmer.getName() + " has not provided any code or tests today.\n");
+                                break;
+                            }
+
+                        if (technology.getCodeDaysDone() < technology.getCodeDaysNeeded()) {
                             technology.setCodeDaysDonePlus(1);
                             System.out.println("(INFO) Programmer, " + programmer.getName()
                                     + " has CODED " + technology.getName() + " technology for "
@@ -342,7 +398,7 @@ public class Company {
                             break;
                         }
 
-                        if (technology.getTestDaysDone() < technology.getCodeDaysDone()){
+                        if (technology.getTestDaysDone() < technology.getCodeDaysDone()) {
                             technology.setTestDaysDonePlus(1);
                             System.out.println("(INFO) Programmer, " + programmer.getName()
                                     + " has TESTED " + technology.getName() + " technology for "
@@ -351,5 +407,39 @@ public class Company {
                         }
                     }
                 }
+            }
     }
+
+
+    public void processEmployeesPayments(LocalDate currentDate){
+        // payment is always for past month
+
+        int employeeWorkDays;
+        double salary;
+        int salaryYear = currentDate.plusMonths(-1).getYear();
+        int salaryMonth = currentDate.plusMonths(-1).getMonthValue();
+        String desc;
+
+        for(Employee employee:employees){
+
+            // for employees that were hired in current month payments are not processed
+            if (currentDate.getMonthValue() == employee.getHireDate().getMonthValue())
+                break;
+
+            // employee who was hired earlier than 20 days has full monthly salary
+            // otherwise salary is calculated: pay4hour * 8.0 * number of days
+            employeeWorkDays = (int) ChronoUnit.DAYS.between(employee.getHireDate(), currentDate) + 1;
+
+            if (employeeWorkDays > 20)
+                salary = employee.getMonthlySalary();
+            else
+                salary = employee.getPayForHour() * 8.0 * (double) employeeWorkDays;
+
+            desc = "Salary " + salaryYear + "/" + salaryMonth + " for " + employee.getName() + ", " + employee.getEmployeeRole();
+
+            transactionsOut.add(new Transaction(salary, currentDate.plusDays(5), desc));
+        }
+    }
+
+
 }

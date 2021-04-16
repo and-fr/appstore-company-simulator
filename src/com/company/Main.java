@@ -19,8 +19,11 @@ public class Main {
             project.setStartDate(game.getCurrentDate());
             game.getCompany().addProject(project);
         }
-        for(int i=1; i<=7; i++)
-            game.getCompany().addEmployee(new Employee());
+        for(int i=1; i<=7; i++){
+            Employee employee = new Employee();
+            employee.setHireDate(game.getCurrentDate());
+            game.getCompany().addEmployee(employee);
+        }
         // TEST CODE END
 
         game.showSummary();
@@ -49,6 +52,7 @@ public class Main {
                     game.optionEmployees();
                     break;
                 case '7': // company tasks
+                    game.optionCompanyTasks();
                     break;
                 case '8': // company reports
                     break;
