@@ -331,42 +331,6 @@ public class Project {
     }
 
 
-    public void showAllTechnologies(){
-        System.out.println("Project: " + name);
-        System.out.println("Technologies:\n");
-        int count = 0;
-        for (Technology tech:technologies) {
-            System.out.print("\t" + ++count + ". " + tech.getName() + "   ");
-        }
-        System.out.println("\n");
-    }
-
-
-    public void showProjectDetails(LocalDate gameDate){
-        int delayDays = getDaysOfDelay(gameDate);
-        int codePercentComplete;
-        int testPercentComplete;
-
-        StringBuilder sb = new StringBuilder("PROJECT'S SUMMARY:\n");
-        sb.append(getName()).append(" for ").append(getClient().getName());
-        sb.append(" | price: ").append(getPrice());
-        sb.append(" | deadline: ").append(getDeadline());
-        sb.append(" (delay days: ").append( delayDays > 0 ? delayDays : "no" ).append(")\n");
-        sb.append("techs: ");
-        for (Technology tech:technologies) {
-            codePercentComplete = (int) (((double)tech.getCodeDaysDone() / (double)tech.getCodeDaysNeeded()) * 100.0);
-            testPercentComplete = (int) (((double)tech.getTestDaysDone() / (double)tech.getCodeDaysNeeded()) * 100.0);
-            sb.append(tech.getName()).append(" (code: ").append(codePercentComplete).append("%, tests: ").append(testPercentComplete).append("%) ");
-        }
-
-        sb.append("\nCODE COMPLETED: ").append(getCodeCompletionPercent()).append("% | ");
-        sb.append("TESTS COMPLETED: ").append(getTestCompletionPercent()).append("% | ");
-        sb.append("OVERALL: ").append(getCompletionPercent()).append("%");
-
-        System.out.println(sb);
-    }
-
-
     public void negotiatePriceBonus(){
         // if seller found a project, the seller is able to negotiate a better price for it
         if (seller != null){

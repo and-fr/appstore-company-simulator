@@ -26,9 +26,10 @@ public class Main {
         }
         // TEST CODE END
 
-        game.showSummary();
+        //game.showSummary();
+        game.console.summary(game);
         while(true){
-            game.showMainMenu();
+            game.console.mainMenu();
 
             switch (Tool.getKey()){
                 case '0':

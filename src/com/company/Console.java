@@ -1,0 +1,329 @@
+package com.company;
+
+import com.company.assets.Conf;
+import com.company.people.Contractor;
+import com.company.people.Employee;
+import com.company.things.Company;
+import com.company.things.Project;
+import com.company.things.Technology;
+import com.company.things.Transaction;
+
+import javax.swing.*;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CompletionService;
+
+public class Console {
+
+    // methods of this class generate console messages
+
+
+    public void welcomeMessage(){
+        System.out.println("""
+        # IT SOFTWARE COMPANY SIMULATOR
+        # You start with some amount of money. You have no office, no employees, no clients.
+        # You know how to program in Java, have some knowledge of databases, and you can do some front-end work.
+        # You can also configure a webpage using Wordpress, and implement e-commerce solution using Prestashop.
+        # You can't create mobile apps. For that you need to make a deal with a contractor, hire an employee, or avoid such projects.
+        """);
+    }
+
+
+    public void mainMenu(){
+        System.out.print("""
+        MAIN MENU
+        
+        \t1. New projects         3. Code / Test      5. Contractors   7. Company tasks     9. Next day
+        \t2. Search for clients   4. Return project   6. Employees     8. Company reports   0. Exit
+        
+        [Type a number and press Enter]
+        """);
+    }
+
+
+    public void summary(Game game){
+        int dayNumber = (int) (ChronoUnit.DAYS.between(Conf.START_DATE, game.getCurrentDate()) + 1);
+
+        StringBuilder summary = new StringBuilder();
+        summary.append("DAY ").append(dayNumber).append(" (").append(game.getCurrentDate()).append(" ").append(game.getCurrentDate().getDayOfWeek()).append(") | ");
+        summary.append("MONEY: ").append(BigDecimal.valueOf(game.getCompany().getMoney()).toPlainString()).append(" | ");
+        summary.append("PROJECTS: ").append(game.getCompany().getProjects().size()).append(" | ");
+        summary.append("OFFICE: ").append(game.getCompany().hasOffice() ? "yes" : "no").append(" | ");
+        summary.append("EMPLOYEES: ").append(game.getCompany().getEmployees().size()).append(" | ");
+        summary.append("CONTRACTORS: ").append(game.getCompany().getContractorsCount()).append("\n");
+
+        StringBuilder line = new StringBuilder().append("-".repeat(summary.length())).append("\n");
+
+        System.out.println(line + String.valueOf(summary) + line);
+    }
+
+
+    public void info(String text){
+        System.out.println("(INFO) " + text + "\n");
+    }
+
+
+    public void actionMessage(String text){
+        System.out.println("[" + text + " (or 0 for cancel) then press Enter.]");
+    }
+
+
+    public void menuProjectsAvailable(List<Project> projects){
+        StringBuilder sb = new StringBuilder("AVAILABLE PROJECTS:\n\n");
+        int count = 0;
+        for (Project pr : projects) {
+            sb.append("\t").append(++count).append(". | ").append(pr.getName()).append(" from ").append(pr.getClient().getName()).append(" | price: ").append(pr.getPrice()).append(" | technologies: ");
+            for (Technology tech : pr.getTechnologies())
+                sb.append(tech.getName()).append(" ");
+            sb.append("| work days: ").append(pr.getTotalWorkDaysNeeded());
+            if (pr.isNegotiatedBySeller())
+                sb.append(" | NEGOTIATED BY ").append(pr.getSeller().getName()).append(" (price: +").append(pr.getPriceBonus()).append(")");
+            sb.append("\n");
+        }
+        sb.append("\n");
+        System.out.print(sb);
+
+        actionMessage("Type the number of a project to work on");
+    }
+
+
+    public void menuProjectsCurrent(List<Project> projects){
+        StringBuilder sb = new StringBuilder("COMPANY'S PROJECTS:\n\n");
+        int count = 0;
+        for (Project prj:projects) {
+            sb.append("\t").append(++count).append(".");
+            sb.append(" | ").append(prj.getName()).append(" for ").append(prj.getClient().getName());
+            sb.append(" | price: ").append(prj.getPrice()).append(" | deadline: ").append(prj.getDeadline());
+            if (prj.getProgrammers().size() > 0){
+                sb.append(" | programmers: ");
+                for(Employee programmer:prj.getProgrammers())
+                    sb.append(programmer.getName()).append(" ");
+            }
+            if (prj.getTester() != null)
+                sb.append(" | tester: ").append(prj.getTester().getName());
+            sb.append("\n\t\t techs: ");
+            for (Technology tech : prj.getTechnologies()) {
+                sb.append(tech.getName()).append(" (code ").append(tech.getCodeDaysDone()).append("/");
+                sb.append(tech.getCodeDaysNeeded()).append(", tests: ").append(tech.getTestDaysDone()).append("/").append(tech.getCodeDaysDone());
+                sb.append((tech.isContractorAssigned() ? ", contractor" : "")).append("); ");
+            }
+            sb.append("\n");
+        }
+        System.out.println(sb);
+    }
+
+
+    public void menuEmployees(){
+        System.out.println(
+            "EMPLOYEES\n\n" + "\t1. View employees     2. Hire an employee     3. Fire an employee     4. Search for employees" +
+            " (cost: " + Conf.SEARCH_FOR_EMPLOYEES_COST + ")\n" +
+            "\t5. Assign testers to projects                 6. Assign programmers to projects\n"
+        );
+        actionMessage("Type a number of an option");
+    }
+
+
+    public void employeesForHire(List<Employee> employees){
+        StringBuilder sb = new StringBuilder("EMPLOYEES FOR HIRE:\n");
+        int count = 0;
+        for (Employee employee : employees) {
+            sb.append("\t").append(++count).append(". ").append(employee.getName());
+            sb.append(" (").append(employee.getEmployeeRole().toLowerCase()).append(") | monthly salary: ").append(employee.getMonthlySalary());
+        }
+        sb.append("\n");
+        System.out.println(sb);
+    }
+
+
+    public void employeesForFire(List<Employee> employees){
+        System.out.println("COMPANY'S EMPLOYEES:\n");
+        int count = 0;
+        for(Employee employee: employees)
+            System.out.println("\t" + ++count + ". " + employee.getName()
+                    + " (" + employee.getEmployeeRole().toLowerCase() + ")");
+    }
+
+
+    public void testers(Company company){
+        System.out.println("COMPANY'S TESTERS:\n");
+        Project project;
+        int count = 0;
+        for(Employee tester:company.getTesters()) {
+            project = company.getProjectTesterIsAssignedTo(tester);
+            System.out.print("\t" + ++count + ". " + tester.getName()
+                    + (project == null ? " (unassigned)" : ", works on " + project.getName() + " project") + "\n");
+        }
+    }
+
+
+    public void programmers(Company company){
+        System.out.println("COMPANY'S PROGRAMMERS:\n");
+        Project prj;
+        int count = 0;
+        for(Employee programmer:company.getProgrammers()) {
+            prj = company.getProjectProgrammerIsAssignedTo(programmer);
+            System.out.print("\t" + ++count + ". " + programmer.getName());
+            if (prj != null)
+                System.out.print(", works on " + prj.getName() + " project");
+            System.out.println();
+        }
+    }
+
+
+    public void menuTasks(Company company){
+        StringBuilder sb = new StringBuilder("COMPANY, TASKS\n\n");
+        sb.append("\t1. Approve payments     2. View approved payments status");
+        if (!company.hasOffice())
+            sb.append("     3. Rent an office (monthly cost: ").append(Conf.OFFICE_MONTHLY_COST).append(")");
+        sb.append("\n");
+        System.out.println(sb);
+
+        actionMessage("Type a number of an option");
+    }
+
+
+    public void menuPaymentsUnapproved(Company company){
+        System.out.println("COMPANY'S UNAPPROVED PAYMENTS:\n");
+        int count = 0;
+        for(Transaction tr:company.getUnapprovedTransactions())
+            System.out.println(++count + ". " + tr.getDescription() + " | " + tr.getMoney() + " | " + tr.getProcessDate());
+
+        actionMessage("Type numbers separated by coma of transactions you want to approve. Type all to approve all transactions");
+    }
+
+
+    public void paymentsApprovedStatus(Company company){
+        System.out.println("APPROVED PAYMENTS STATUS:\n");
+        int count = 0;
+        for(Transaction tr:company.getApprovedTransactions())
+            System.out.println("\t" + ++count + ". " + tr.getDescription() + " | " + tr.getMoney() + " | " + tr.getProcessDate());
+        System.out.println();
+    }
+
+
+    public void contractorsForHire(List<Contractor> contractors){
+        StringBuilder sb = new StringBuilder().append("CONTRACTORS:\n\n");
+        int count = 0;
+        for (Contractor con : contractors) {
+            sb.append("\t").append(++count).append(". | ").append(con.getName());
+            sb.append(" | pay for hour: ").append(con.getPayForHour());
+            sb.append(" | on time: ").append(con.isFinishOnTime()).append(" | no errors: ").append(con.isNoErrors());
+            sb.append("\n\t\t ").append("skills: ");
+            for (String skill : con.getSkills()) {
+                sb.append(skill).append(" ");
+            }
+            sb.append("\n");
+        }
+        System.out.println(sb);
+    }
+
+
+    public void menuWorkType(Technology technology){
+        System.out.println("On what type of work you want to focus on with " + technology.getName() + " technology?\n");
+        System.out.println("\t1. Programming     2. Testing\n");
+        actionMessage("Type a number of your work choice");
+    }
+
+
+    public void menuProjectReturnConfirmation(Project project, LocalDate currentDate){
+        System.out.println("PROJECT'S DETAILS:\n");
+
+        int delayDays = project.getDaysOfDelay(currentDate);
+        int codePercentComplete;
+        int testPercentComplete;
+
+        StringBuilder sb = new StringBuilder("PROJECT'S SUMMARY:\n");
+        sb.append(project.getName()).append(" for ").append(project.getClient().getName());
+        sb.append(" | price: ").append(project.getPrice());
+        sb.append(" | deadline: ").append(project.getDeadline());
+        sb.append(" (delay days: ").append( delayDays > 0 ? delayDays : "no" ).append(")\n");
+        sb.append("techs: ");
+        for (Technology tech:project.getTechnologies()) {
+            codePercentComplete = (int) (((double)tech.getCodeDaysDone() / (double)tech.getCodeDaysNeeded()) * 100.0);
+            testPercentComplete = (int) (((double)tech.getTestDaysDone() / (double)tech.getCodeDaysNeeded()) * 100.0);
+            sb.append(tech.getName()).append(" (code: ").append(codePercentComplete).append("%, tests: ").append(testPercentComplete).append("%) ");
+        }
+
+        sb.append("\nCODE COMPLETED: ").append(project.getCodeCompletionPercent()).append("% | ");
+        sb.append("TESTS COMPLETED: ").append(project.getTestCompletionPercent()).append("% | ");
+        sb.append("OVERALL: ").append(project.getCompletionPercent()).append("%");
+
+        System.out.println(sb);
+
+        actionMessage("Do you really want to return this project to client? y/n");
+    }
+
+
+    public void menuSelectedTransactionsApproval(List<Integer> transactions){
+        StringBuilder sb = new StringBuilder("[Selected transactions: ");
+        for(int trNum:transactions)
+            sb.append(trNum).append(" ");
+        sb.append("Approve? y/n]");
+        System.out.println(sb);
+    }
+
+
+    public void menuSelectedTransactionsConfirmation(Company company, List<Integer> transactions){
+        StringBuilder sb = new StringBuilder("You approved transactions: ");
+        transactions.sort(Collections.reverseOrder());
+        for(int num:transactions){
+            company.getUnapprovedTransactions().get(num - 1).setAsApproved();
+            sb.append(num).append(" ");
+        }
+        info(sb.toString());
+    }
+
+
+    public void employeesStatus(Company company){
+        Project project;
+        StringBuilder sb = new StringBuilder("COMPANY'S EMPLOYEES\n-------------------\n");
+
+        sb.append("PROGRAMMERS:\n");
+        for (Employee programmer:company.getProgrammers()){
+            sb.append("\t").append(programmer.getName());
+            project = company.getProjectProgrammerIsAssignedTo(programmer);
+            if (project == null)
+                sb.append(" (UNASSIGNED)");
+            else
+                sb.append(" (works on ").append(project.getName()).append(" project)");
+            sb.append(" | skills: ");
+            for(String skill:programmer.getSkills())
+                sb.append(skill).append(" ");
+            sb.append("| salary: ").append(programmer.getMonthlySalary()).append("\n");
+        }
+
+        sb.append("TESTERS:\n");
+        for (Employee tester:company.getTesters()){
+            sb.append("\t").append(tester.getName());
+            project = company.getProjectTesterIsAssignedTo(tester);
+            if (project == null)
+                sb.append(" (UNASSIGNED)");
+            else
+                sb.append(" (works on ").append(project.getName()).append(" project)");
+            sb.append(" | salary: ").append(tester.getMonthlySalary()).append("\n");
+        }
+
+        sb.append("SELLERS:\n");
+        for (Employee seller:company.getSellers()){
+            sb.append("\t").append(seller.getName());
+            sb.append(" | salary: ").append(seller.getMonthlySalary()).append("\n");
+        }
+
+        sb.append("-------------------\n");
+
+        System.out.println(sb);
+    }
+
+
+    public void projectTechnologies(Project project){
+        System.out.println("Project: " + project.getName());
+        System.out.println("Technologies:\n");
+        int count = 0;
+        for (Technology tech:project.getTechnologies())
+            System.out.print("\t" + ++count + ". " + tech.getName() + "   ");
+        System.out.println("\n");
+    }
+}

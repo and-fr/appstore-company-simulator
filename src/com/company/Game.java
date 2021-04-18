@@ -1,7 +1,6 @@
 package com.company;
 
 import com.company.assets.Conf;
-import com.company.assets.Lang;
 import com.company.assets.Tool;
 import com.company.people.Contractor;
 import com.company.people.Employee;
@@ -12,11 +11,8 @@ import com.company.people.Client;
 import com.company.things.Transaction;
 
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Scanner;
 
@@ -34,6 +30,7 @@ public class Game {
     private Integer searchDaysForClients;
     private Integer searchDaysForEmployees;
     private Boolean isEmployeePaymentTime;
+    public Console console;
 
 
     // CONSTRUCTORS
@@ -55,7 +52,8 @@ public class Game {
         generateInitialContractors();
         generateInitialEmployees();
 
-        System.out.println(Lang.GAME_WELCOME_MESSAGE);
+        console = new Console();
+        console.welcomeMessage();
     }
 
 
@@ -64,22 +62,6 @@ public class Game {
     public Company getCompany() { return company; }
     public LocalDate getCurrentDate() { return currentDate; }
 
-    public void showSummary(){
-        StringBuilder summary = new StringBuilder();
-        summary.append("DAY ").append(getDayNumber()).append(" (").append(currentDate).append(" ").append(currentDate.getDayOfWeek()).append(") | ");
-        summary.append("MONEY: ").append(new BigDecimal(company.getMoney()).toPlainString()).append(" | ");
-        summary.append("PROJECTS: ").append(company.getProjects().size()).append(" | ");
-        summary.append("OFFICE: ").append(company.hasOffice() ? "yes" : "no").append(" | ");
-        summary.append("EMPLOYEES: ").append(company.getEmployees().size()).append(" | ");
-        summary.append("CONTRACTORS: ").append(company.getContractorsCount()).append("\n");
-        StringBuilder line = new StringBuilder().append("-".repeat(summary.length())).append("\n");
-        System.out.println(line + String.valueOf(summary) + line);
-    }
-
-
-    public void showMainMenu(){
-        System.out.print(Lang.MAIN_MENU);
-    }
 
 
     private void addNewProject(){
@@ -93,32 +75,19 @@ public class Game {
     public void optionAvailableProjects(){
 
         if (company.getProjects().size() >= Conf.MAX_COMPANY_PROJECTS_AT_A_TIME){
-            System.out.println(
-                "(INFO) Your company can handle only " + Conf.MAX_COMPANY_PROJECTS_AT_A_TIME +
+            console.info(
+                "Your company can handle only " + Conf.MAX_COMPANY_PROJECTS_AT_A_TIME +
                 " projects at a time. Finish some current projects first."
             );
             return;
         }
 
-        StringBuilder menu = new StringBuilder("AVAILABLE PROJECTS:\n\n");
-        int count = 0;
-
-        if (projects.size() > 0) {
-            for (Project pr : projects) {
-                menu.append("\t").append(++count).append(". | ").append(pr.getName()).append(" from ").append(pr.getClient().getName()).append(" | price: ").append(pr.getPrice()).append(" | technologies: ");
-                for (Technology tech : pr.getTechnologies())
-                    menu.append(tech.getName()).append(" ");
-                menu.append("| work days: ").append(pr.getTotalWorkDaysNeeded());
-                if (pr.isNegotiatedBySeller())
-                    menu.append(" | NEGOTIATED BY ").append(pr.getSeller().getName()).append(" (price: +").append(pr.getPriceBonus()).append(")");
-                menu.append("\n");
-            }
-        } else {
-            menu.append("\tThere are no any projects available right now. Search for clients or hire a seller.\n");
+        if (projects.size() == 0){
+            console.info("There are no any projects available right now. Search for clients or hire a seller.");
+            return;
         }
 
-        menu.append("\n[Type the number of a project to work on (or 0 for none) then press Enter to continue]\n");
-        System.out.print(menu);
+        console.menuProjectsAvailable(projects);
 
         while(true){
             char ch = Tool.getKey();
@@ -141,13 +110,12 @@ public class Game {
     public void optionSearchForClients(){
         if (searchDaysForClients < 4){
             searchDaysForClients += 1;
-            System.out.println("(INFO) Since a new project was available you've searched for client for days: " + searchDaysForClients + "\n");
+            console.info("Since a new project was available you've searched for client for days: " + searchDaysForClients);
         } else {
             searchDaysForClients = 0;
             addNewProject();
-            System.out.println("(INFO) Your search has finally payed off. A new project is available.\n");
+            console.info("Your search has finally payed off. A new project is available.");
         }
-        System.out.println();
         advanceNextDay();
     }
 
@@ -155,7 +123,7 @@ public class Game {
     public void optionProgramming(){
 
         if (company.getProjects().size() == 0){
-            System.out.println("(INFO) Your company has no any projects.\n");
+            console.info("Your company has no any projects.");
             return;
         }
 
@@ -166,9 +134,8 @@ public class Game {
         char key;
 
         // MENU: PROJECT LEVEL
-        System.out.println("COMPANY'S PROJECTS:\n");
-        company.showAllProjects();
-        System.out.println("[Type a number of a project you would like to CODE/TEST for. Or type 0 to cancel. Then press Enter.]");
+        console.menuProjectsCurrent(company.getProjects());
+        console.actionMessage("Type a number of a project you would like to CODE/TEST for");
 
         while (project == null){
             key = Tool.getKey();
@@ -181,13 +148,13 @@ public class Game {
 
         // if all code and tests are completed there's no point to work on project anymore
         if (project.isFinished()){
-            System.out.println("(INFO) " + project.getName() + " project has all code and tests already completed.\n");
+            console.info(project.getName() + " project has all code and tests already completed.");
             return;
         }
 
         // MENU: TECHNOLOGY LEVEL
-        project.showAllTechnologies();
-        System.out.println("[Type a number of a technology you want to work with. Or type 0 to cancel. Then Press Enter.]");
+        console.projectTechnologies(project);
+        console.actionMessage("Type a number of a technology you want to work with");
 
         while (technology == null) {
             key = Tool.getKey();
@@ -200,20 +167,18 @@ public class Game {
 
         // if all code and tests for technology are completed there's no point to work on it anymore
         if (technology.isFinished()){
-            System.out.println("(INFO) " + technology.getName() + " technology for this project has all code and tests already completed.\n");
+            console.info(technology.getName() + " technology for this project has all code and tests already completed.");
             return;
         }
 
         // check if tech is Mobile - player can't work on this, need to hire someone else
         if (technology.getName().equals("Mobile")){
-            System.out.println("(INFO) You can't work on Mobile technology. You need to get a contractor or hire a programmer.\n");
+            console.info("You can't work on Mobile technology. You need to get a contractor or hire a programmer.");
             return;
         }
 
         // MENU: WORK TYPE LEVEL
-        System.out.println("On what type of work you want to focus on with " + technology.getName() + " technology?\n");
-        System.out.println("\t1. Programming     2. Testing\n");
-        System.out.println("[Type a number of your work choice. Or type 0 to cancel. Then Press Enter.]");
+        console.menuWorkType(technology);
         while (workType == null){
             switch (Tool.getKey()){
                 case '0': return;
@@ -226,13 +191,13 @@ public class Game {
 
             // if code is completed there's no point to work on it anymore
             if (technology.isCodeCompleted()){
-                System.out.println("(INFO) " + project.getName() + " project has code already completed.\n");
+                console.info(project.getName() + " project has code already completed.");
                 return;
             }
 
             // check if tech is not assigned to contractor (player can't work on this)
             if (technology.isContractorAssigned()){
-                System.out.println("(INFO) There's a contractor who works on this technology. You can't code it.\n");
+                console.info("There's a contractor who works on this technology. You can't code it.");
                 return;
             }
 
@@ -247,7 +212,7 @@ public class Game {
             // (this project won't be counted towards winning scenario)
             project.setPlayerAsInvolved();
 
-            System.out.println("(INFO) You spent one day on CODING for " + technology.getName() + " tech for " + project.getName() + " project.\n");
+            console.info("You spent one day on CODING for " + technology.getName() + " tech for " + project.getName() + " project.");
             advanceNextDay();
             return;
         }
@@ -256,14 +221,14 @@ public class Game {
 
             // if no code, no tests
             if (technology.getCodeDaysDone() == 0){
-                System.out.println("(INFO) No code for " + technology.getName() + " technology was written. There's nothing to test for.\n");
+                console.info("No code for " + technology.getName() + " technology was written. There's nothing to test for.");
                 return;
             }
 
             // if days of tests are equal to code days
             // this indicates all written code has already been tested
             if (technology.getTestDaysDone() >= technology.getCodeDaysDone()){
-                System.out.println("(INFO) All code for " + technology.getName() + " technology has been already tested.\n");
+                console.info("All code for " + technology.getName() + " technology has been already tested.");
                 return;
             }
 
@@ -273,7 +238,7 @@ public class Game {
             // (this project won't be counted towards winning scenario)
             project.setPlayerAsInvolved();
 
-            System.out.println("(INFO) You spent one day on TESTING the code for " + technology.getName() + " tech for " + project.getName() + " project.\n");
+            console.info("You spent one day on TESTING the code for " + technology.getName() + " tech for " + project.getName() + " project.");
             advanceNextDay();
         }
     }
@@ -282,7 +247,7 @@ public class Game {
     public void optionReturnProject(){
 
         if (company.getProjects().size() == 0){
-            System.out.println("(INFO) Your company has no any projects.\n");
+            console.info("Your company has no any projects.");
             return;
         }
 
@@ -291,9 +256,8 @@ public class Game {
         int selectedNum;
 
         // MENU: PROJECT SELECTION LEVEL
-        System.out.println("COMPANY'S PROJECTS:\n");
-        company.showAllProjects();
-        System.out.println("[Type a number of a project you would like to RETURN to client. Or type 0 for cancel. Then press Enter.]");
+        console.menuProjectsCurrent(company.getProjects());
+        console.actionMessage("Type a number of a project you would like to RETURN to client");
 
         while (project == null) {
             key = Tool.getKey();
@@ -307,9 +271,7 @@ public class Game {
         }
 
         // MENU: CONFIRMATION LEVEL
-        System.out.println("PROJECT'S DETAILS:\n");
-        project.showProjectDetails(currentDate);
-        System.out.println("\n[Do you really want to return this project to client?] [y/n]");
+        console.menuProjectReturnConfirmation(project, currentDate);
         do {
             key = Tool.getKey();
             if (key == 'n') return;
@@ -344,7 +306,7 @@ public class Game {
         // by default project needs to be completed at 75% or more
         // otherwise no client will ever pay for it, and the contract is lost
         if (project.getCompletionPercent() < Conf.PROJECT_PERCENT_COMPLETION_MIN_ACCEPT_THRESHOLD){
-            System.out.println("(INFO) Unfortunately, the returned project has been completed in less than 75%. Client will not pay for it. This contract is lost.\n");
+            console.info("Unfortunately, the returned project has been completed in less than 75%. Client will not pay for it. This contract is lost.");
             advanceNextDay();
             return;
         }
@@ -353,7 +315,7 @@ public class Game {
         // payment will depend on the chance generated by the start of the project
         if (project.getCompletionPercent() >= Conf.PROJECT_PERCENT_COMPLETION_MIN_ACCEPT_THRESHOLD && project.getCompletionPercent() < 100) {
             if (project.isProblemFromNotWorkingProject()){
-                System.out.println("(INFO) Unfortunately, the client decided to cancel the contract, because project was not completed. There will be no any payment.");
+                console.info("Unfortunately, the client decided to cancel the contract, because project was not completed. There will be no any payment.");
                 advanceNextDay();
                 return;
             } else
@@ -365,7 +327,7 @@ public class Game {
             if (project.isPaymentNever()){
                 // if clients has such trait as "will never pay" then this is an outcome for it
                 // player is notified that the project is returned, but no payment (transaction) will be ever made
-                System.out.println("(INFO) Project '" + project.getName() + "' has been returned to client.\n");
+                console.info("Project '" + project.getName() + "' has been returned to client.");
                 advanceNextDay();
                 return;
             } else
@@ -387,12 +349,12 @@ public class Game {
                     money -= project.getPenaltyPrice();
                 else
                     money -= project.getPenaltyPrice() * 2.0;
-                System.out.println("(INFO) Project has been delayed by days: " + delayDays + ". The price client will pay will be lower, as penalty for the delay will be deducted from it.\n");
+                console.info("Project has been delayed by days: " + delayDays + ". The price client will pay will be lower, as penalty for the delay will be deducted from it.");
             }
 
             company.addTransactionIn(new Transaction(money, date, desc));
-            System.out.println("(INFO) Project '" + project.getName() + "' has been returned to " + project.getClient().getName()
-                    + ". Expected payment within " + project.getPaymentDaysDue() + " days: " + money + "\n");
+            console.info("Project '" + project.getName() + "' has been returned to " + project.getClient().getName()
+                    + ". Expected payment within " + project.getPaymentDaysDue() + " days: " + money);
 
             advanceNextDay();
         }
@@ -403,7 +365,7 @@ public class Game {
 
         // if company has no projects then contractors can't be hired
         if (company.getProjects().size() == 0){
-            System.out.println("(INFO) Your company has no projects for any contractor to work on.\n");
+            console.info("Your company has no projects for any contractor to work on.");
             return;
         }
 
@@ -414,8 +376,8 @@ public class Game {
         char key;
 
         // MENU: CONTRACTORS LEVEL
-        showContractors();
-        System.out.println("[Type number of contractor you want to hire. Type 0 for cancel. Then Press Enter.]");
+        console.contractorsForHire(contractors);
+        console.actionMessage("Type number of contractor you want to hire");
         while(contractor == null) {
             key = Tool.getKey();
             if (key == '0') return;
@@ -426,8 +388,8 @@ public class Game {
         }
 
         // MENU: PROJECTS LEVEL
-        company.showAllProjects();
-        System.out.println("[Type number of project you want contractor to work on. Type 0 for cancel. Then Press Enter.]");
+        console.menuProjectsCurrent(company.getProjects());
+        console.actionMessage("Type number of project you want contractor to work on");
         while(project == null) {
             key = Tool.getKey();
             if (key == '0') return;
@@ -438,8 +400,8 @@ public class Game {
         }
 
         // MENU: TECHNOLOGY LEVEL
-        project.showAllTechnologies();
-        System.out.println("[Type number of technology you want contractor to work on. Type 0 for cancel. Then Press Enter.]");
+        console.projectTechnologies(project);
+        console.actionMessage("Type number of technology you want contractor to work on");
         while(technology == null) {
             key = Tool.getKey();
             if (key == '0') return;
@@ -449,26 +411,26 @@ public class Game {
 
                 // can't hire contractor if tech was contracted previously
                 if (technology.isContractorWorkFinished()){
-                    System.out.println("(INFO) Contractor worked on this tech in the past. It can't be assigned to any contractor anymore.\n");
+                    console.info("Contractor worked on this tech in the past. It can't be assigned to any contractor anymore.");
                     continue;
                 }
 
                 // check if other contractor works on tech
                 if (technology.getContractor() != null){
-                    System.out.println("(INFO) Technology " + technology.getName() + " has already contractor assigned.\n");
+                    console.info("Technology " + technology.getName() + " has already contractor assigned.");
                     continue;
                 }
 
                 // check if contractor has required skill
                 if (!contractor.getSkills().contains(technology.getName())){
-                    System.out.println("(INFO) Contractor " + contractor.getName() + " doesn't know " + technology.getName() + " technology.\n");
+                    console.info("Contractor " + contractor.getName() + " doesn't know " + technology.getName() + " technology.");
                     continue;
                 }
 
                 technology.setContractor(contractor);
                 contractors.remove(contractor);
-                System.out.println("(INFO) Contractor " + contractor.getName() + " has agreed to work on "
-                        + technology.getName() + " technology for " + project.getName() + " project.\n");
+                console.info("Contractor " + contractor.getName() + " has agreed to work on "
+                        + technology.getName() + " technology for " + project.getName() + " project.");
 
                 advanceNextDay();
             }
@@ -480,18 +442,13 @@ public class Game {
         char key;
 
         // MENU: MAIN EMPLOYEES LEVEL
-        System.out.println("EMPLOYEES\n");
-        System.out.println("\t1. View employees     2. Hire an employee     3. Fire an employee     4. Search for employees (cost: "
-                + Conf.SEARCH_FOR_EMPLOYEES_COST + ")");
-        System.out.println("\t5. Assign testers to projects                 6. Assign programmers to projects\n");
-        System.out.println("[Type a number of an option. Or 0 to cancel. Then press Enter.]");
+        console.menuEmployees();
         int selectedNum;
-        while(true) {
+        do {
             key = Tool.getKey();
             if (key == '0') return;
             selectedNum = Character.getNumericValue(key);
-            if (selectedNum >= 1 && selectedNum <= 6) break;
-        }
+        } while (selectedNum < 1 || selectedNum > 6);
 
         switch(selectedNum){
             case 1 : optionEmployeesView(); break;
@@ -506,27 +463,27 @@ public class Game {
 
     private void optionEmployeesView(){
         if (company.getEmployees().size() < 1)
-            System.out.println("(INFO) Your company has no employees.\n");
+            console.info("Your company has no employees.");
         else
-            company.showEmployeesStatus();
+            console.employeesStatus(company);
     }
 
 
     private void optionEmployeesHire() {
 
         if (!company.hasOffice()) {
-            System.out.println("(INFO) Your company has no office. You can't hire people. Rent some office space first.\n");
+            console.info("Your company has no office. You can't hire people. Rent some office space first.");
             return;
         }
 
         if (company.getEmployees().size() >= Conf.MAX_COMPANY_EMPLOYEES_AT_A_TIME) {
-            System.out.println("(INFO) Your company can't have more than " + Conf.MAX_COMPANY_EMPLOYEES_AT_A_TIME
-                    + " employees. Fire one of your current employees if you want to hire a new person.\n");
+            console.info("Your company can't have more than " + Conf.MAX_COMPANY_EMPLOYEES_AT_A_TIME
+                    + " employees. Fire one of your current employees if you want to hire a new person.");
             return;
         }
 
         if (employees.size() == 0) {
-            System.out.println("(INFO) There are no any people for hire right now. You need to search for employees.\n");
+            console.info("There are no any people for hire right now. You need to search for employees.");
             return;
         }
 
@@ -534,13 +491,8 @@ public class Game {
         int selectedNum;
         Employee employee;
 
-        System.out.println("EMPLOYEES FOR HIRE:\n");
-        int count = 0;
-        for (Employee person : employees) {
-            System.out.println("\t" + ++count + ". " + person.getName() + " (" + person.getEmployeeRole()
-                    + ") | monthly salary: " + person.getMonthlySalary());
-        }
-        System.out.println("\n[Type a number of person to hire. Or type 0 to cancel. Then press Enter.]");
+        console.employeesForHire(employees);
+        console.actionMessage("Type a number of person to hire.");
 
         while(true) {
             key = Tool.getKey();
@@ -555,28 +507,24 @@ public class Game {
         employee.setHireDate(currentDate);
         company.addEmployee(employee);
         employees.remove(employee);
-        System.out.println("(INFO) You hired a new " + employee.getEmployeeRole().toLowerCase()
-                + ", " + employee.getName() + ".\n");
+        console.info("You hired a new " + employee.getEmployeeRole().toLowerCase()
+                + ", " + employee.getName() + ".");
         advanceNextDay();
     }
 
     private void optionEmployeesFire(){
 
         if (company.getEmployees().size() < 1){
-            System.out.println("(INFO) Your company has no employees.\n");
+            console.info("Your company has no employees.");
             return;
         }
 
         char key;
-        int count = 0;
         int selectedNum;
         Employee selectedEmployee;
 
-        System.out.println("COMPANY'S EMPLOYEES:\n");
-        for(Employee employee: company.getEmployees())
-            System.out.println("\t" + ++count + ". " + employee.getName()
-                    + " (" + employee.getEmployeeRole().toLowerCase() + ")");
-        System.out.println("\n[Type an employee number you want to fire. Or type 0 for cancel. Then press Enter.]");
+        console.employeesForFire(company.getEmployees());
+        console.actionMessage("Type an employee number you want to fire.");
 
         while (true){
             key = Tool.getKey();
@@ -595,15 +543,15 @@ public class Game {
         if (selectedEmployee.isTester())
             company.removeTesterFromAnyProjects(selectedEmployee);
         company.removeEmployee(selectedEmployee);
-        System.out.println("(INFO) You fired a " + selectedEmployee.getEmployeeRole().toLowerCase()
-                + ", " + selectedEmployee.getName() + ".\n");
+        console.info("You fired a " + selectedEmployee.getEmployeeRole().toLowerCase()
+                + ", " + selectedEmployee.getName() + ".");
         advanceNextDay();
     }
 
     public void optionEmployeesSearch(){
 
         if (company.getMoney() < Conf.SEARCH_FOR_EMPLOYEES_COST){
-            System.out.println("(INFO) Your company has no money to search for an employee.\n");
+            console.info("Your company has no money to search for an employee.");
             return;
         }
 
@@ -613,9 +561,9 @@ public class Game {
         if (searchDaysForEmployees % 5 == 0) {
             addEmployee(new Employee());
             searchDaysForEmployees = 0;
-            System.out.println("(INFO) Your search for employees was successful. A potential candidate found. Check employee for hire option.\n");
+            console.info("Your search for employees was successful. A potential candidate found. Check employee for hire option.");
         } else {
-            System.out.println("(INFO) You spent a day on employee search. No success so far.\n");
+            console.info("You spent a day on employee search. No success so far.");
         }
 
         advanceNextDay();
@@ -625,61 +573,50 @@ public class Game {
     public void optionEmployeesAssignTester(){
 
         if (company.getTesters().size() == 0){
-            System.out.println("(INFO) Your company has no any testers hired.\n");
+            console.info("Your company has no any testers hired.");
             return;
         }
 
         if (company.getProjects().size() == 0){
-            System.out.println("(INFO) Your company has no any projects.\n");
+            console.info("Your company has no any projects.");
             return;
         }
 
         // MENU: TESTERS CHOICE LEVEL
-        int count = 0;
-        Project project;
-        System.out.println("COMPANY'S TESTERS:\n");
-        for(Employee tester:company.getTesters()) {
-            project = company.getProjectTesterIsAssignedTo(tester);
-            System.out.print("\t" + ++count + ". " + tester.getName()
-                    + (project == null ? " (unassigned)" : ", works on " + project.getName() + " project") + "\n");
-        }
-        System.out.println("\n[Type the number of the tester you want to choose. Or type 0 for cancel. Then press Enter.]");
+        console.testers(company);
+        console.actionMessage("Type a number of a tester you want to choose");
 
         char key;
         int selectedNum;
-        while(true){
+        do {
             key = Tool.getKey();
             if (key == '0') return;
             selectedNum = Character.getNumericValue(key);
-            if (selectedNum >= 1 && selectedNum <= company.getTesters().size())
-                break;
-        }
+        } while (selectedNum < 1 || selectedNum > company.getTesters().size());
 
         Employee tester = company.getTesters().get(selectedNum - 1);
 
         // MENU: PROJECT SELECTION LEVEL
-        company.showAllProjects();
-        System.out.println("[Select a number of a project you want the tester to be assigned to. Or type 0 for cancel. Then press Enter.]");
+        console.menuProjectsCurrent(company.getProjects());
+        console.actionMessage("Select a number of a project you want the tester to be assigned to");
 
-        while(true){
+        do {
             key = Tool.getKey();
             if (key == '0') return;
             selectedNum = Character.getNumericValue(key);
-            if (selectedNum >= 1 && selectedNum <= company.getProjects().size())
-                break;
-        }
+        } while (selectedNum < 1 || selectedNum > company.getProjects().size());
 
-        project = company.getProjects().get(selectedNum - 1);
+        Project project = company.getProjects().get(selectedNum - 1);
 
         if (project.getTester() != null)
             if (project.getTester().equals(tester)){
-                System.out.println("(INFO) Tester, " + tester.getName() + " is already assigned to this project.\n");
+                console.info("Tester, " + tester.getName() + " is already assigned to this project.");
                 return;
             }
 
         company.removeTesterFromAnyProjects(tester);
         project.setTester(tester);
-        System.out.println("(INF0) Tester, " + tester.getName() + " has been assigned to work on " + project.getName() + " project.\n");
+        console.info("Tester, " + tester.getName() + " has been assigned to work on " + project.getName() + " project.");
         advanceNextDay();
     }
 
@@ -687,82 +624,65 @@ public class Game {
     public void optionEmployeesAssignProgrammer(){
 
         if (company.getProgrammers().size() == 0){
-            System.out.println("(INFO) Your company has no any programmers hired.\n");
+            console.info("Your company has no any programmers hired.");
             return;
         }
 
         if (company.getProjects().size() == 0){
-            System.out.println("(INFO) Your company has no any projects.\n");
+            console.info("Your company has no any projects.");
             return;
         }
 
         // MENU: PROGRAMMERS CHOICE LEVEL
-        int count = 0;
-        Project prj;
-        System.out.println("COMPANY'S PROGRAMMERS:\n");
-        for(Employee programmer:company.getProgrammers()) {
-            prj = company.getProjectProgrammerIsAssignedTo(programmer);
-            System.out.print("\t" + ++count + ". " + programmer.getName());
-            if (prj != null)
-                System.out.print(", works on " + prj.getName() + " project");
-            System.out.println();
-        }
-        System.out.println("\n[Type the number of the programmer you want to choose. Or type 0 for cancel. Then press Enter.]");
+        console.programmers(company);
+        console.actionMessage("Type the number of the programmer you want to choose");
 
         char key;
         int selectedNum;
-        while(true){
+        do {
             key = Tool.getKey();
             if (key == '0') return;
             selectedNum = Character.getNumericValue(key);
-            if (selectedNum >= 1 && selectedNum <= company.getProgrammers().size())
-                break;
-        }
+        } while (selectedNum < 1 || selectedNum > company.getProgrammers().size());
 
         Employee programmer = company.getProgrammers().get(selectedNum - 1);
 
         // MENU: PROJECT SELECTION LEVEL
-        company.showAllProjects();
-        System.out.println("[Select a number of a project you want programmer to focus on. Or type 0 for cancel. Then press Enter.]");
+        console.menuProjectsCurrent(company.getProjects());
+        console.actionMessage("Select a number of a project you want programmer to focus on");
 
-        while(true){
+        do {
             key = Tool.getKey();
             if (key == '0') return;
             selectedNum = Character.getNumericValue(key);
-            if (selectedNum >= 1 && selectedNum <= company.getProjects().size())
-                break;
-        }
+        } while (selectedNum < 1 || selectedNum > company.getProjects().size());
 
         Project project = company.getProjects().get(selectedNum - 1);
 
         // PROCESS CHOICES
 
         if (project.isProgrammerAssigned(programmer)) {
-            System.out.println("(INFO) Programmer " + programmer.getName() + " already works on "
-                + project.getName() + " project.\n");
+            console.info("Programmer " + programmer.getName() + " already works on "
+                + project.getName() + " project.");
             return;
         }
 
         company.removeProgrammerFromAnyProjects(programmer);
         project.addProgrammer(programmer);
-        System.out.println("(INFO) Programmer, " + programmer.getName() + " has been assigned to work on "
-            + project.getName() + " project.\n");
+        console.info("Programmer, " + programmer.getName() + " has been assigned to work on "
+            + project.getName() + " project.");
         advanceNextDay();
     }
 
 
     public void optionCompanyTasks(){
-        System.out.println("COMPANY, TASKS\n");
-        System.out.print("\t1. Approve payments     2. View approved payments status");
-        if (!company.hasOffice())
-            System.out.print("     3. Rent an office (monthly cost: " + Conf.OFFICE_MONTHLY_COST + ")");
-        System.out.println("\n\n[Type a number of an option, or type 0 for cancel. Then press Enter.]");
+        console.menuTasks(company);
 
         while(true){
             switch(Tool.getKey()){
                 case '0': return;
                 case '1': optionCompanyTaskApprovePayments(); return;
-                case '2': optionCompanyTaskViewApprovedPayments(); return;
+                case '2': console.paymentsApprovedStatus(company); return;
                 case '3':
                     if (!company.hasOffice()) {
                         optionCompanyTaskRentOffice();
@@ -777,15 +697,11 @@ public class Game {
     private void optionCompanyTaskApprovePayments(){
 
         if (company.getUnapprovedTransactions().size() == 0){
-            System.out.println("(INFO) There are no any unapproved transactions today.\n");
+            console.info("There are no any unapproved transactions today.");
             return;
         }
 
-        System.out.println("COMPANY'S UNAPPROVED PAYMENTS:\n");
-        int count = 0;
-        for(Transaction tr:company.getUnapprovedTransactions())
-           System.out.println(++count + ". " + tr.getDescription() + " | " + tr.getMoney() + " | " + tr.getProcessDate());
-        System.out.println("\n[Type numbers separated by coma of transactions you want to approve. Type all to approve all transactions. Or type 0 for cancel. Then press Enter.]");
+        console.menuPaymentsUnapproved(company);
 
         List<Integer> transactionNumbersToApprove = new ArrayList<>();
         Scanner sc = new Scanner(System.in);
@@ -797,7 +713,7 @@ public class Game {
             case "all":
                 for(Transaction tr:company.getUnapprovedTransactions())
                     tr.setAsApproved();
-                System.out.println("(INFO) You approved all pending transactions.\n");
+                console.info("You approved all pending transactions.");
                 advanceNextDay();
                 break;
 
@@ -805,8 +721,8 @@ public class Game {
             default:
                 String[] inputValues = input.split(",");
                 int num;
-                for(int i = 0; i < inputValues.length; i++){
-                    num = Integer.parseInt(inputValues[i]);
+                for (String inputValue : inputValues) {
+                    num = Integer.parseInt(inputValue);
                     if (num > 0 && num <= company.getUnapprovedTransactions().size())
                         transactionNumbersToApprove.add(num);
                 }
@@ -814,29 +730,18 @@ public class Game {
         }
 
         if (transactionNumbersToApprove.size() == 0){
-            System.out.println("(INFO) No valid numbers of transactions have been provided.\n");
+            console.info("No valid numbers of transactions have been provided.");
             return;
         }
 
         // approve selected transactions
-        StringBuilder sb = new StringBuilder("[Selected transactions: ");
-        for(int trNum:transactionNumbersToApprove)
-            sb.append(trNum).append(" ");
-        sb.append("Approve? y/n]");
-        System.out.println(sb);
+        console.menuSelectedTransactionsApproval(transactionNumbersToApprove);
 
         while (true){
             switch (Tool.getKey()){
                 case 'n': return;
                 case 'y':
-                    StringBuilder sbNumbers = new StringBuilder("(INFO) You approved transactions: ");
-                    transactionNumbersToApprove.sort(Collections.reverseOrder());
-                    for(int num:transactionNumbersToApprove){
-                        company.getUnapprovedTransactions().get(num - 1).setAsApproved();
-                        sbNumbers.append(num).append(" ");
-                    }
-                    sbNumbers.append("\n");
-                    System.out.println(sbNumbers);
+                    console.menuSelectedTransactionsConfirmation(company, transactionNumbersToApprove);
                     advanceNextDay();
                     return;
             }
@@ -844,42 +749,16 @@ public class Game {
     }
 
 
-    private void optionCompanyTaskViewApprovedPayments(){
-        System.out.println("APPROVED PAYMENTS STATUS:\n");
-        int count = 0;
-        for(Transaction tr:company.getApprovedTransactions())
-            System.out.println("\t" + ++count + ". " + tr.getDescription() + " | " + tr.getMoney() + " | " + tr.getProcessDate());
-        System.out.println();
-    }
-
-
     private void optionCompanyTaskRentOffice(){
         company.setOfficeRentMonthlyPayDayNumber(currentDate.getDayOfMonth());
         company.setHasOffice(true);
-        System.out.println("(INFO) You rented office for your company.\n");
+        console.info("You rented office for your company.");
     }
 
 
     private void addEmployee(Employee employee){
         if (employees.size() >= Conf.MAX_AVAILABLE_EMPLOYEES) employees.remove(0);
         employees.add(employee);
-    }
-
-
-    public void showContractors() {
-        StringBuilder sb = new StringBuilder().append("CONTRACTORS:\n\n");
-        int count = 0;
-        for (Contractor con : contractors) {
-            sb.append("\t").append(++count).append(". | ").append(con.getName());
-            sb.append(" | pay for hour: ").append(con.getPayForHour());
-            sb.append(" | on time: ").append(con.isFinishOnTime()).append(" | no errors: ").append(con.isNoErrors());
-            sb.append("\n\t\t ").append("skills: ");
-            for (String skill : con.getSkills()) {
-                sb.append(skill).append(" ");
-            }
-            sb.append("\n");
-        }
-        System.out.println(sb);
     }
 
 
@@ -906,11 +785,6 @@ public class Game {
     private void generateInitialEmployees(){
         for (int i = 1; i <= Conf.INITIAL_AVAILABLE_EMPLOYEES_NUM; i++)
             employees.add(new Employee());
-    }
-
-
-    private Long getDayNumber() {
-        return ChronoUnit.DAYS.between(Conf.START_DATE, currentDate) + 1;
     }
 
 
@@ -955,6 +829,6 @@ public class Game {
 
 
         currentDate = currentDate.plusDays(1);
-        showSummary();
+        console.summary(this);
     }
 }

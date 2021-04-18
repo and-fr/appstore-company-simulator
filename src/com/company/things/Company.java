@@ -1,6 +1,5 @@
 package com.company.things;
 
-import com.company.Main;
 import com.company.assets.Conf;
 import com.company.assets.Tool;
 import com.company.people.Client;
@@ -149,48 +148,6 @@ public class Company {
 
     // OTHER METHODS
 
-
-    public void showEmployeesStatus(){
-        Project project;
-        StringBuilder sb = new StringBuilder("COMPANY'S EMPLOYEES\n-------------------\n");
-
-        sb.append("PROGRAMMERS:\n");
-        for (Employee programmer:getProgrammers()){
-            sb.append("\t").append(programmer.getName());
-            project = getProjectProgrammerIsAssignedTo(programmer);
-            if (project == null)
-                sb.append(" (UNASSIGNED)");
-            else
-                sb.append(" (works on ").append(project.getName()).append(" project)");
-            sb.append(" | skills: ");
-            for(String skill:programmer.getSkills())
-                sb.append(skill).append(" ");
-            sb.append("| salary: ").append(programmer.getMonthlySalary()).append("\n");
-        }
-
-        sb.append("TESTERS:\n");
-        for (Employee tester:getTesters()){
-            sb.append("\t").append(tester.getName());
-            project = getProjectTesterIsAssignedTo(tester);
-            if (project == null)
-                sb.append(" (UNASSIGNED)");
-            else
-                sb.append(" (works on ").append(project.getName()).append(" project)");
-            sb.append(" | salary: ").append(tester.getMonthlySalary()).append("\n");
-        }
-
-        sb.append("SELLERS:\n");
-        for (Employee seller:getSellers()){
-            sb.append("\t").append(seller.getName());
-            sb.append(" | salary: ").append(seller.getMonthlySalary()).append("\n");
-        }
-
-        sb.append("-------------------\n");
-
-        System.out.println(sb);
-    }
-
-
     public void removeTesterFromAnyProjects(Employee tester){
         for(Project project:projects)
             if (project.getTester() != null)
@@ -204,32 +161,6 @@ public class Company {
             for(Employee employee:project.getProgrammers())
                 if (employee.equals(programmer))
                     project.removeProgrammer(programmer);
-    }
-
-
-    public void showAllProjects(){
-        StringBuilder sb = new StringBuilder();
-        int count = 0;
-        for (Project prj:projects) {
-            sb.append("\t").append(++count).append(".");
-            sb.append(" | ").append(prj.getName()).append(" for ").append(prj.getClient().getName());
-            sb.append(" | price: ").append(prj.getPrice()).append(" | deadline: ").append(prj.getDeadline());
-            if (prj.getProgrammers().size() > 0){
-                sb.append(" | programmers: ");
-                for(Employee programmer:prj.getProgrammers())
-                    sb.append(programmer.getName()).append(" ");
-            }
-            if (prj.getTester() != null)
-                sb.append(" | tester: ").append(prj.getTester().getName());
-            sb.append("\n\t\t techs: ");
-            for (Technology tech : prj.getTechnologies()) {
-                sb.append(tech.getName()).append(" (code ").append(tech.getCodeDaysDone()).append("/");
-                sb.append(tech.getCodeDaysNeeded()).append(", tests: ").append(tech.getTestDaysDone()).append("/").append(tech.getCodeDaysDone());
-                sb.append((tech.isContractorAssigned() ? ", contractor" : "")).append("); ");
-            }
-            sb.append("\n");
-        }
-        System.out.println(sb);
     }
 
 
