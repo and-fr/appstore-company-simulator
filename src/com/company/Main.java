@@ -1,9 +1,11 @@
 package com.company;
 
+import com.company.assets.Conf;
 import com.company.assets.Tool;
 import com.company.people.Client;
 import com.company.people.Employee;
 import com.company.things.Project;
+import com.company.things.Transaction;
 
 
 public class Main {
@@ -12,21 +14,29 @@ public class Main {
 
         Game game = new Game();
 
-        // TEST CODE START
-        Project project;
-        for(int i=1; i<=7; i++){
-            project = new Project(new Client());
-            project.setStartDate(game.getCurrentDate());
-            game.getCompany().addProject(project);
+        if (Conf.TEST_MODE_ENABLED){
+            Project project;
+            for(int i=1; i<=7; i++){
+                project = new Project(new Client());
+                project.setStartDate(game.getCurrentDate());
+                game.getCompany().addProject(project);
+            }
+            for(int i=1; i<=7; i++){
+                Employee employee = new Employee();
+                employee.setHireDate(game.getCurrentDate());
+                game.getCompany().addEmployee(employee);
+            }
+            for(int i=1; i<=3; i++){
+                Transaction transaction = new Transaction(
+                        i * 100.0,
+                        game.getCurrentDate(),
+                        "Test transaction IN no. " + i
+                );
+                game.getCompany().addTransactionIn(transaction);
+            }
+            System.out.println("<< TEST_MODE: added initial projects, employees, transactions to company >>");
         }
-        for(int i=1; i<=7; i++){
-            Employee employee = new Employee();
-            employee.setHireDate(game.getCurrentDate());
-            game.getCompany().addEmployee(employee);
-        }
-        // TEST CODE END
 
-        //game.showSummary();
         game.console.summary(game);
         while(true){
             game.console.mainMenu();

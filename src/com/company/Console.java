@@ -8,13 +8,12 @@ import com.company.things.Project;
 import com.company.things.Technology;
 import com.company.things.Transaction;
 
-import javax.swing.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CompletionService;
+
 
 public class Console {
 
@@ -36,8 +35,8 @@ public class Console {
         System.out.print("""
         MAIN MENU
         
-        \t1. New projects         3. Code / Test      5. Contractors   7. Company tasks     9. Next day
-        \t2. Search for clients   4. Return project   6. Employees     8. Company reports   0. Exit
+        \t1. New projects         3. Projects Code/Test/View   5. Contractors   7. Company tasks     9. Next day
+        \t2. Search for clients   4. Return project            6. Employees     8. Company reports   0. Exit
         
         [Type a number and press Enter]
         """);
@@ -118,9 +117,12 @@ public class Console {
 
     public void menuEmployees(){
         System.out.println(
-            "EMPLOYEES\n\n" + "\t1. View employees     2. Hire an employee     3. Fire an employee     4. Search for employees" +
-            " (cost: " + Conf.SEARCH_FOR_EMPLOYEES_COST + ")\n" +
-            "\t5. Assign testers to projects                 6. Assign programmers to projects\n"
+            "EMPLOYEES\n\n" + "\t1. View employees\n" +
+            "\t2. Hire an employee (cost: " + Conf.EMPLOYEE_HIRE_COST + ")\n" +
+            "\t3. Fire an employee\n" +
+            "\t4. Search for employees (cost: " + Conf.EMPLOYEE_SEARCH_COST + ")\n" +
+            "\t5. Assign testers to projects\n" +
+            "\t6. Assign programmers to projects\n"
         );
         actionMessage("Type a number of an option");
     }
@@ -144,6 +146,7 @@ public class Console {
         for(Employee employee: employees)
             System.out.println("\t" + ++count + ". " + employee.getName()
                     + " (" + employee.getEmployeeRole().toLowerCase() + ")");
+        System.out.println("\n");
     }
 
 
@@ -175,9 +178,9 @@ public class Console {
 
     public void menuTasks(Company company){
         StringBuilder sb = new StringBuilder("COMPANY, TASKS\n\n");
-        sb.append("\t1. Approve payments     2. View approved payments status");
+        sb.append("\t1. Approve payments     2. View approved payments status     3. View income");
         if (!company.hasOffice())
-            sb.append("     3. Rent an office (monthly cost: ").append(Conf.OFFICE_MONTHLY_COST).append(")");
+            sb.append("     4. Rent an office (monthly cost: ").append(Conf.OFFICE_MONTHLY_COST).append(")");
         sb.append("\n");
         System.out.println(sb);
 
@@ -190,15 +193,33 @@ public class Console {
         int count = 0;
         for(Transaction tr:company.getUnapprovedTransactions())
             System.out.println(++count + ". " + tr.getDescription() + " | " + tr.getMoney() + " | " + tr.getProcessDate());
+        System.out.println("\n");
 
         actionMessage("Type numbers separated by coma of transactions you want to approve. Type all to approve all transactions");
     }
 
 
-    public void paymentsApprovedStatus(Company company){
+    public void menuPaymentsApproved(Company company){
+        if (company.getApprovedTransactions().size() == 0){
+            info("There are no approved transactions today.");
+            return;
+        }
         System.out.println("APPROVED PAYMENTS STATUS:\n");
         int count = 0;
         for(Transaction tr:company.getApprovedTransactions())
+            System.out.println("\t" + ++count + ". " + tr.getDescription() + " | " + tr.getMoney() + " | " + tr.getProcessDate());
+        System.out.println();
+    }
+
+
+    public void menuIncome(List<Transaction> transactions){
+        if (transactions.size() == 0){
+            info("There were no any incoming payments yet.");
+            return;
+        }
+        System.out.println("COMPANY'S INCOME:\n");
+        int count = 0;
+        for(Transaction tr:transactions)
             System.out.println("\t" + ++count + ". " + tr.getDescription() + " | " + tr.getMoney() + " | " + tr.getProcessDate());
         System.out.println();
     }
@@ -229,8 +250,6 @@ public class Console {
 
 
     public void menuProjectReturnConfirmation(Project project, LocalDate currentDate){
-        System.out.println("PROJECT'S DETAILS:\n");
-
         int delayDays = project.getDaysOfDelay(currentDate);
         int codePercentComplete;
         int testPercentComplete;
@@ -249,7 +268,7 @@ public class Console {
 
         sb.append("\nCODE COMPLETED: ").append(project.getCodeCompletionPercent()).append("% | ");
         sb.append("TESTS COMPLETED: ").append(project.getTestCompletionPercent()).append("% | ");
-        sb.append("OVERALL: ").append(project.getCompletionPercent()).append("%");
+        sb.append("OVERALL: ").append(project.getCompletionPercent()).append("%\n");
 
         System.out.println(sb);
 
@@ -325,5 +344,10 @@ public class Console {
         for (Technology tech:project.getTechnologies())
             System.out.print("\t" + ++count + ". " + tech.getName() + "   ");
         System.out.println("\n");
+    }
+
+
+    public void gameOver(){
+        System.out.println("<<< GAME OVER >>>");
     }
 }

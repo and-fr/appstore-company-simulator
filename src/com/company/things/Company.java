@@ -126,7 +126,7 @@ public class Company {
     public List<Transaction> getApprovedTransactions(){
         List<Transaction> transactions = new ArrayList<>();
         for(Transaction transaction:transactionsOut)
-            if (transaction.isApproved()) transactions.add(transaction);
+            if (transaction.isApproved() && !transaction.isPayed()) transactions.add(transaction);
         return transactions;
     }
 
@@ -347,8 +347,8 @@ public class Company {
 
         int employeeWorkDays;
         double salary;
-        int salaryYear = currentDate.plusMonths(-1).getYear();
-        int salaryMonth = currentDate.plusMonths(-1).getMonthValue();
+        int salaryYear = currentDate.minusMonths(1).getYear();
+        int salaryMonth = currentDate.minusMonths(1).getMonthValue();
         String desc;
 
         for(Employee employee:employees){
@@ -368,9 +368,133 @@ public class Company {
 
             desc = "Salary " + salaryYear + "/" + salaryMonth + " for " + employee.getName() + ", " + employee.getEmployeeRole();
 
-            transactionsOut.add(new Transaction(salary, currentDate.plusDays(5), desc));
+            Transaction transaction = new Transaction(salary, currentDate.plusDays(5), desc);
+            transaction.setAsSalary();
+            transaction.setEmployee(employee);
+            transactionsOut.add(transaction);
         }
     }
 
 
+    public void processEmployeeCurrentMonthPayment(Employee employee, LocalDate currentDate){
+        // calculate the number of days which need to be compensated
+        int days = currentDate.getDayOfMonth();
+        if (employee.getHireDate().getYear() == currentDate.getYear() && employee.getHireDate().getMonthValue() == currentDate.getMonthValue())
+            days = currentDate.getDayOfMonth() - employee.getHireDate().getDayOfMonth();
+
+        Transaction tr = new Transaction(
+                days * 8.0 * employee.getPayForHour(),
+                currentDate.plusDays(7),
+                "Salary " + currentDate.getYear() + "/" + currentDate.getMonthValue() + " " + employee.getName() + ", " + employee.getEmployeeRole()
+        );
+        tr.setAsSalary();
+        tr.setEmployee(employee);
+        transactionsOut.add(tr);
+    }
+
+
+    public void processEmployeesCosts(){
+        List<Transaction> trCosts = new ArrayList<>();
+
+        for(Transaction tr:transactionsOut)
+            if(tr.isSalary() && !tr.isCostGenerated()){
+                trCosts.add(new Transaction(
+                        (tr.getMoney() / 100.0) * Conf.EMPLOYEE_WORK_COST_PERCENT,
+                        tr.getProcessDate(),
+                        tr.getDescription() + " (COSTS)"
+                ));
+                tr.setAsCostGenerated();
+            }
+
+        for(Transaction trc:trCosts){
+            trc.setAsMandatoryCost();
+            transactionsOut.add(trc);
+        }
+    }
+
+
+    public Integer countUnpaidCostsPastMonth(LocalDate currentDate){
+        int count = 0;
+        for(Transaction tr:transactionsOut)
+            if (tr.isMandatoryCost() && !tr.isApproved() && tr.getProcessDate().getMonthValue() < currentDate.getMonthValue())
+                count++;
+        return count;
+    }
+
+
+    public void processTransactionsOut(LocalDate currentDate){
+        for(Transaction tr:transactionsOut)
+            if (!tr.isPayed() && tr.isApproved())
+                if (tr.getProcessDate().equals(currentDate) || tr.getProcessDate().isBefore(currentDate)){
+                    money -= tr.getMoney();
+                    tr.setAsPayed();
+                    System.out.println("(INFO) Transaction OUT: " + tr.getDescription() + " (" +tr.getMoney()+ ")\n");
+                }
+    }
+
+
+    public void processTransactionsIn(LocalDate currentDate){
+        for(Transaction tr:transactionsIn)
+            if (!tr.isPayed())
+                if (tr.getProcessDate().equals(currentDate) || tr.getProcessDate().isBefore(currentDate)){
+                    money += tr.getMoney();
+                    tr.setAsPayed();
+                    System.out.println("(INFO) Transaction IN: " + tr.getDescription() + " (" +tr.getMoney()+ ")\n");
+                }
+    }
+
+
+    public List<Transaction> getTransactionsInPayed(){
+        List<Transaction> transactions = new ArrayList<>();
+        for(Transaction tr:transactionsIn)
+            if (tr.isPayed()) transactions.add(tr);
+        return transactions;
+    }
+
+
+    public List<Transaction> getUnpaidSalaries(LocalDate currentDate){
+        // returns employee salaries which haven't been approved last month
+        // and haven't been payed, thus those employees will be leaving the company
+        List<Transaction> unpaidSalaries = new ArrayList<>();
+        for(Transaction tr:transactionsOut){
+            if (!tr.isSalary()) continue;
+            if (tr.isApproved()) continue;
+            if (tr.getProcessDate().getYear() == currentDate.minusMonths(1).getYear() && tr.getProcessDate().getMonthValue() == currentDate.minusMonths(1).getMonthValue())
+                unpaidSalaries.add(tr);
+        }
+        return unpaidSalaries;
+    }
+
+
+    public void processTaxes(LocalDate currentDate){
+        LocalDate previousMonth = currentDate.minusMonths(1);
+        double taxes;
+        double incomePreviousMonth = 0.0;
+        for(Transaction tr:getTransactionsInPayed())
+            if (tr.getProcessDate().getYear() == previousMonth.getYear() && tr.getProcessDate().getMonthValue() == previousMonth.getMonthValue())
+                incomePreviousMonth += tr.getMoney();
+        taxes = incomePreviousMonth / Conf.TAX_FROM_INCOME_MONTHLY_PERCENT;
+
+        if (taxes > 0.0){
+            Transaction tr = new Transaction(
+                    taxes,
+                    currentDate,
+                    "Taxes for " + previousMonth.getYear() + "/" + previousMonth.getMonthValue()
+            );
+            tr.setAsMandatoryCost();
+            transactionsOut.add(tr);
+        }
+    }
+
+
+    public void processReturnedProjectsPayments(LocalDate currentDate){
+        for(Project project:returnedProjects){
+
+            if (project.getTransaction() == null) continue;
+            if (project.getTransaction().isPayed()) continue;
+            if (transactionsIn.contains(project.getTransaction())) continue;
+
+            transactionsIn.add(project.getTransaction());
+        }
+    }
 }

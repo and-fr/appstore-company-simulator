@@ -32,6 +32,7 @@ public class Project {
     private List<Employee> programmers;
     private Double price;
     private Double priceBonus;
+    private Transaction transaction;
 
 
     // CONSTRUCTORS
@@ -51,6 +52,7 @@ public class Project {
         isPlayerInvolved = false;
         price = generatePrice();
         priceBonus = 0.0;
+        transaction = null;
     }
 
 
@@ -70,6 +72,7 @@ public class Project {
     public Integer getTotalWorkDaysNeeded() { return totalWorkDaysNeeded; }
     public Boolean isNegotiatedBySeller() { return seller != null; }
     public Boolean isPlayerInvolved() { return isPlayerInvolved; }
+    public Transaction getTransaction() { return transaction; }
 
     public LocalDate getDeadline() {
         // deadline date is calculated from start date
@@ -241,6 +244,7 @@ public class Project {
     public void setPlayerAsInvolved() { isPlayerInvolved = true; }
     public void removeTester() { tester = null; }
     public void removeProgrammer(Employee programmer) { programmers.remove(programmer); }
+    public void setTransaction(Transaction transaction) { this.transaction = transaction; }
 
 
     // OTHER METHODS

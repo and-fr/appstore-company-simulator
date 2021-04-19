@@ -29,7 +29,7 @@ public class Game {
     private final Company company;
     private Integer searchDaysForClients;
     private Integer searchDaysForEmployees;
-    private Boolean isEmployeePaymentTime;
+    private Boolean isPaymentTime;
     public Console console;
 
 
@@ -45,7 +45,7 @@ public class Game {
         currentDate = Conf.START_DATE;
         searchDaysForClients = 0;
         searchDaysForEmployees = 0;
-        isEmployeePaymentTime = true;
+        isPaymentTime = true;
 
         generateInitialClients();
         generateInitialProjects();
@@ -352,7 +352,7 @@ public class Game {
                 console.info("Project has been delayed by days: " + delayDays + ". The price client will pay will be lower, as penalty for the delay will be deducted from it.");
             }
 
-            company.addTransactionIn(new Transaction(money, date, desc));
+            project.setTransaction(new Transaction(money, date, desc));
             console.info("Project '" + project.getName() + "' has been returned to " + project.getClient().getName()
                     + ". Expected payment within " + project.getPaymentDaysDue() + " days: " + money);
 
@@ -504,13 +504,22 @@ public class Game {
             }
         }
 
+        // check for required amount of money as hiring process is costly
+        if (company.getMoney() < Conf.EMPLOYEE_HIRE_COST){
+            console.info("Your company has not enough of money to hire an employee.");
+            return;
+        }
+        company.removeMoney(Conf.EMPLOYEE_HIRE_COST);
+
         employee.setHireDate(currentDate);
         company.addEmployee(employee);
         employees.remove(employee);
         console.info("You hired a new " + employee.getEmployeeRole().toLowerCase()
                 + ", " + employee.getName() + ".");
+
         advanceNextDay();
     }
+
 
     private void optionEmployeesFire(){
 
@@ -542,6 +551,9 @@ public class Game {
             company.removeProgrammerFromAnyProjects(selectedEmployee);
         if (selectedEmployee.isTester())
             company.removeTesterFromAnyProjects(selectedEmployee);
+
+        company.processEmployeeCurrentMonthPayment(selectedEmployee, currentDate);
+        company.processEmployeesCosts();
         company.removeEmployee(selectedEmployee);
         console.info("You fired a " + selectedEmployee.getEmployeeRole().toLowerCase()
                 + ", " + selectedEmployee.getName() + ".");
@@ -550,13 +562,13 @@ public class Game {
 
     public void optionEmployeesSearch(){
 
-        if (company.getMoney() < Conf.SEARCH_FOR_EMPLOYEES_COST){
+        if (company.getMoney() < Conf.EMPLOYEE_SEARCH_COST){
             console.info("Your company has no money to search for an employee.");
             return;
         }
 
         searchDaysForEmployees += 1;
-        company.removeMoney(Conf.SEARCH_FOR_EMPLOYEES_COST);
+        company.removeMoney(Conf.EMPLOYEE_SEARCH_COST);
 
         if (searchDaysForEmployees % 5 == 0) {
             addEmployee(new Employee());
@@ -682,8 +694,9 @@ public class Game {
             switch(Tool.getKey()){
                 case '0': return;
                 case '1': optionCompanyTaskApprovePayments(); return;
-                case '2': console.paymentsApprovedStatus(company); return;
-                case '3':
+                case '2': console.menuPaymentsApproved(company); return;
+                case '3': console.menuIncome(company.getTransactionsInPayed()); return;
+                case '4':
                     if (!company.hasOffice()) {
                         optionCompanyTaskRentOffice();
                         advanceNextDay();
@@ -791,6 +804,7 @@ public class Game {
     public void advanceNextDay(){
 
         // PEOPLE WORK
+
         // contractors and employees don't work during weekends
         if (currentDate.getDayOfWeek().getValue() < 6){
             company.processSellersDailyWork(projects, clients);
@@ -801,15 +815,21 @@ public class Game {
 
 
         // PAYMENTS
+
         company.processContractorsFinishedWork(currentDate, contractors);
 
-        // on a first work day of each month employees' payments for past month are processed
-        if (isEmployeePaymentTime && currentDate.getDayOfMonth() <= 3 && currentDate.getDayOfWeek().getValue() < 6){
+        // on a first work day of each month are processed:
+        // - taxes from income in past month
+        // - employees' payments for past month
+        // - employee costs (taxes, insurances, work place costs, etc.)
+        if (isPaymentTime && currentDate.getDayOfMonth() <= 3 && currentDate.getDayOfWeek().getValue() < 6){
+            company.processTaxes(currentDate);
             company.processEmployeesPayments(currentDate);
-            isEmployeePaymentTime = false;
+            company.processEmployeesCosts();
+            isPaymentTime = false;
         }
         if (currentDate.getDayOfMonth() == 4)
-            isEmployeePaymentTime = true;
+            isPaymentTime = true;
 
         // rent for office
         if (currentDate.getDayOfMonth() == company.getOfficeRentMonthlyPayDayNumber())
@@ -820,15 +840,72 @@ public class Game {
             ));
 
 
+        // TRANSACTIONS
+
+        company.processReturnedProjectsPayments(currentDate);
+
+        // transactions IN (company's income)
+        company.processTransactionsIn(currentDate);
+        // transactions OUT (company's costs)
+        company.processTransactionsOut(currentDate);
+
+
+        // HANDLING UNPAID EMPLOYEES
+        List<Transaction> unpaidSalaries = company.getUnpaidSalaries(currentDate);
+        System.out.println(unpaidSalaries.size());
+        if (currentDate.getDayOfMonth() == 25 && unpaidSalaries.size() > 0)
+            for(Transaction tr:unpaidSalaries){
+                company.processEmployeeCurrentMonthPayment(tr.getEmployee(), currentDate);
+                company.processEmployeesCosts();
+                company.removeEmployee(tr.getEmployee());
+                System.out.println(
+                        "(INFO) " + tr.getEmployee().getEmployeeRole() + ", " + tr.getEmployee().getName() +
+                                " has not received salary for previous month and decided to leave the company."
+                );
+            }
+
 
         // test
-        System.out.println("ADVANCE NEXT DAY METHOD / TRANSACTIONS TEST");
-        for(Transaction tr:company.getTransactionsOut())
-            System.out.println(tr.getMoney() +" "+ tr.getProcessDate().toString() +" "+ tr.getDescription());
-        System.out.println();
+        if (Conf.TEST_MODE_ENABLED){
+            System.out.println("<< TEST_MODE:");
+            System.out.println("TRANSACTIONS OUT:");
+            for(Transaction tr:company.getTransactionsOut())
+                System.out.println(
+                    tr.getMoney() +" "+ tr.getProcessDate().toString() +" "+ tr.getDescription()
+                    + (tr.isSalary()?" SALARY ":"") + (tr.isMandatoryCost()?" COST ":"")
+                );
+            System.out.println("TRANSACTIONS IN:");
+            for(Transaction tr:company.getTransactionsIn())
+                System.out.println(tr.getMoney() +" "+ tr.getProcessDate().toString() +" "+ tr.getDescription());
+            System.out.println(">>");
 
+        }
 
         currentDate = currentDate.plusDays(1);
         console.summary(this);
+
+        checkWinningScenario();
+    }
+
+
+    private void checkWinningScenario(){
+
+        // game over if money below 0
+        if (company.getMoney() < 0.0){
+            console.info("YOU LOST! Your company has no money to function properly.");
+            console.gameOver();
+            System.exit(0);
+        }
+
+        // if player hasn't approved any costs from previous month
+        // and a date of each of those payments is in the past
+        // then tax collectors are angry and the company is shut
+        if (currentDate.getDayOfMonth() == 10)
+            if (company.countUnpaidCostsPastMonth(currentDate) > 0) {
+                console.info("YOU LOST! Your company hasn't payed some costs for the past month. Tax collectors and other officials are enraged. Your company was shut.");
+                console.gameOver();
+                System.exit(0);
+            }
+
     }
 }

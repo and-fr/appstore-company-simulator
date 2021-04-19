@@ -7,10 +7,13 @@ public class Conf {
     // BOOLEANS
 
     public static final Boolean START_COMPANY_HAS_OFFICE = false;
+    public static final Boolean TEST_MODE_ENABLED = true;
 
 
     // DOUBLES
 
+    public static final Double EMPLOYEE_HIRE_COST = 300.0;
+    public static final Double EMPLOYEE_SEARCH_COST = 10.0;
     public static final Double OFFICE_MONTHLY_COST = 500.0;
     public static final Double PAY_FOR_HOUR = 100.0;
     public static final Double PAY_FOR_HOUR_CONTRACTOR_HIGH = 60.0;
@@ -22,8 +25,7 @@ public class Conf {
     public static final Double PAY_FOR_HOUR_EMPLOYEE_PROGRAMMER = 15.0;
     public static final Double PAY_FOR_HOUR_EMPLOYEE_PROGRAMMER_TECH_BONUS = 5.0;
     public static final Double PRICE_PENALTY_MULTIPLIER = 0.1;
-    public static final Double SEARCH_FOR_EMPLOYEES_COST = 10.0;
-    public static final Double START_MONEY = 20000000.0;
+    public static final Double START_MONEY = 2000000.0;
 
 
     // INTEGERS
@@ -36,12 +38,14 @@ public class Conf {
     public static final Integer EMPLOYEE_SICKNESS_DAYS_MAX = 7;
     public static final Integer EMPLOYEE_TYPE_CHANCE_RANGE1 = 25;
     public static final Integer EMPLOYEE_TYPE_CHANCE_RANGE2 = 50;
+    public static final Integer EMPLOYEE_WORK_COST_PERCENT = 20;
     public static final Integer INITIAL_AVAILABLE_EMPLOYEES_NUM = 3;
     public static final Integer INITIAL_AVAILABLE_PROJECTS_NUM = 3;
     public static final Integer OFFICE_RENT_PAY_AFTER_DAYS = 7;
     public static final Integer PLAYER_LUCKY_TEST_DAY_CHANCE_PERCENT = 25;
     public static final Integer PROGRAMMER_SKIP_DAY_MAX_PERCENT_CHANCE = 25;
     public static final Integer PROJECT_PERCENT_COMPLETION_MIN_ACCEPT_THRESHOLD = 75;
+    public static final Integer TAX_FROM_INCOME_MONTHLY_PERCENT = 10;
     public static final Integer TESTER_ADDITIONAL_TESTS_CHANCE = 20;
 
     // following settings should be no more than 9
