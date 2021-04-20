@@ -33,6 +33,7 @@ public class Project {
     private Double price;
     private Double priceBonus;
     private Transaction transaction;
+    private Double paymentAdvance;
 
 
     // CONSTRUCTORS
@@ -53,6 +54,7 @@ public class Project {
         price = generatePrice();
         priceBonus = 0.0;
         transaction = null;
+        paymentAdvance = calculatePaymentAdvance();
     }
 
 
@@ -73,6 +75,7 @@ public class Project {
     public Boolean isNegotiatedBySeller() { return seller != null; }
     public Boolean isPlayerInvolved() { return isPlayerInvolved; }
     public Transaction getTransaction() { return transaction; }
+    public Double getPaymentAdvance() { return paymentAdvance; }
 
     public LocalDate getDeadline() {
         // deadline date is calculated from start date
@@ -304,6 +307,14 @@ public class Project {
         if (client.getProblemsFromNotWorkingProjectChance() > 0)
             return Tool.randInt(1,100) <= client.getProblemsFromNotWorkingProjectChance();
         return false;
+    }
+
+
+    public Double calculatePaymentAdvance(){
+        double advance = 0.0;
+        if (technologies.size() >= Conf.PROJECT_PAYMENT_ADVANCE_FOR_AT_LEAST_TECHS && totalWorkDaysNeeded >= Conf.PROJECT_PAYMENT_ADVANCE_FOR_AT_LEAST_DAYS)
+            advance = (getPrice() / 100) * Conf.PROJECT_PAYMENT_ADVANCE_PERCENT;
+        return advance;
     }
 
 

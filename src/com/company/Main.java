@@ -66,6 +66,7 @@ public class Main {
                     game.optionCompanyTasks();
                     break;
                 case '8': // company reports
+                    game.optionCompanyReports();
                     break;
                 case '9': // next day
                     game.advanceNextDay();

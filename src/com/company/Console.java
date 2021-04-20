@@ -347,6 +347,21 @@ public class Console {
     }
 
 
+    public void companyReports(Game game){
+
+        System.out.println(
+                "COMPANY'S REPORTS\n\n" + "----------\n" +
+                "CONDITIONS TO WIN:\n\n" +
+                "\t1) Payments for complex projects(*): " + game.getCompany().getValidComplexProjectsPayed().size() + "/" + Conf.VALID_PROJECTS_TO_WIN_COUNT + "\n" +
+                "\t2) Complex projects negotiated by a seller: " + game.getCompany().getValidComplexProjectsWithSeller().size() + "/1" + "\n" +
+                "\t3) Current amount of money higher than at the game's start: " + ((game.getCompany().getMoney() > Conf.START_MONEY) ? "YES" : "NO") + "\n\n" +
+                "(*) complex projects are projects with at least " + Conf.VALID_PROJECTS_TO_WIN_MIN_TECHS + " techs and company's owner was not involved in any coding or testing\n" +
+                "    also at least one of those projects needs to be negotiated by one of company's sellers\n" +
+                "----------\n"
+        );
+    }
+
+
     public void gameOver(){
         System.out.println("<<< GAME OVER >>>");
     }

@@ -44,9 +44,15 @@ public class Conf {
     public static final Integer OFFICE_RENT_PAY_AFTER_DAYS = 7;
     public static final Integer PLAYER_LUCKY_TEST_DAY_CHANCE_PERCENT = 25;
     public static final Integer PROGRAMMER_SKIP_DAY_MAX_PERCENT_CHANCE = 25;
+    public static final Integer PROJECT_PAYMENT_ADVANCE_PERCENT = 20;
+    public static final Integer PROJECT_PAYMENT_ADVANCE_AFTER_DAYS = 3;
+    public static final Integer PROJECT_PAYMENT_ADVANCE_FOR_AT_LEAST_TECHS = 4;
+    public static final Integer PROJECT_PAYMENT_ADVANCE_FOR_AT_LEAST_DAYS = 50;
     public static final Integer PROJECT_PERCENT_COMPLETION_MIN_ACCEPT_THRESHOLD = 75;
     public static final Integer TAX_FROM_INCOME_MONTHLY_PERCENT = 10;
     public static final Integer TESTER_ADDITIONAL_TESTS_CHANCE = 20;
+    public static final Integer VALID_PROJECTS_TO_WIN_COUNT = 3;
+    public static final Integer VALID_PROJECTS_TO_WIN_MIN_TECHS = 4;
 
     // following settings should be no more than 9
     // as the core game logic relies on processing

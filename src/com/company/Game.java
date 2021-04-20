@@ -89,21 +89,27 @@ public class Game {
 
         console.menuProjectsAvailable(projects);
 
-        while(true){
-            char ch = Tool.getKey();
-            if (ch == '0') break;
+        int selectedProjectNum;
+        char key;
+        do {
+            key = Tool.getKey();
+            if (key == '0') return;
+            selectedProjectNum = Character.getNumericValue(key);
+        } while (selectedProjectNum <= 0 || selectedProjectNum > projects.size());
 
-            // if player selects a valid project then the project is added to company's projects
-            int selectedProjectNum = Character.getNumericValue(ch);
-            if (selectedProjectNum > 0 && selectedProjectNum <= projects.size()){
-                Project prj = projects.get(selectedProjectNum - 1);
-                company.addProject(prj);
-                prj.setStartDate(currentDate);
-                projects.remove(selectedProjectNum - 1);
-                advanceNextDay();
-                break;
-            }
+        // if player selects a valid project then the project is added to company's projects
+        Project prj = projects.get(selectedProjectNum - 1);
+        company.addProject(prj);
+        projects.remove(selectedProjectNum - 1);
+        prj.setStartDate(currentDate);
+        if (prj.getPaymentAdvance() > 0.0){
+            company.addTransactionIn(new Transaction(
+                    prj.getPaymentAdvance(),
+                    currentDate.plusDays(Conf.PROJECT_PAYMENT_ADVANCE_AFTER_DAYS),
+                    "Payment advance, '" + prj.getName() + "' project from " + prj.getClient().getName()
+            ));
         }
+        advanceNextDay();
     }
 
 
@@ -307,6 +313,7 @@ public class Game {
         // otherwise no client will ever pay for it, and the contract is lost
         if (project.getCompletionPercent() < Conf.PROJECT_PERCENT_COMPLETION_MIN_ACCEPT_THRESHOLD){
             console.info("Unfortunately, the returned project has been completed in less than 75%. Client will not pay for it. This contract is lost.");
+            returnPaymentAdvanceForCancelledProject(project, currentDate);
             advanceNextDay();
             return;
         }
@@ -316,6 +323,7 @@ public class Game {
         if (project.getCompletionPercent() >= Conf.PROJECT_PERCENT_COMPLETION_MIN_ACCEPT_THRESHOLD && project.getCompletionPercent() < 100) {
             if (project.isProblemFromNotWorkingProject()){
                 console.info("Unfortunately, the client decided to cancel the contract, because project was not completed. There will be no any payment.");
+                returnPaymentAdvanceForCancelledProject(project, currentDate);
                 advanceNextDay();
                 return;
             } else
@@ -352,11 +360,28 @@ public class Game {
                 console.info("Project has been delayed by days: " + delayDays + ". The price client will pay will be lower, as penalty for the delay will be deducted from it.");
             }
 
+            // if payment advance for the project was payed
+            // that payment advance is deducted from final project's payment
+            if (project.getPaymentAdvance() > 0.0)
+                money -= project.getPaymentAdvance();
             project.setTransaction(new Transaction(money, date, desc));
             console.info("Project '" + project.getName() + "' has been returned to " + project.getClient().getName()
                     + ". Expected payment within " + project.getPaymentDaysDue() + " days: " + money);
 
             advanceNextDay();
+        }
+    }
+
+
+    private void returnPaymentAdvanceForCancelledProject(Project project, LocalDate currentDate){
+        // if payment advance for the project was payed
+        // that payment advance is deducted from final project's payment
+        if (project.getPaymentAdvance() > 0.0){
+            company.addTransactionOut(new Transaction(
+                    project.getPaymentAdvance(),
+                    currentDate.plusDays(Conf.PROJECT_PAYMENT_ADVANCE_AFTER_DAYS),
+                    "Returned payment advance for cancelled '" + project.getName() + "' project"
+            ));
         }
     }
 
@@ -769,6 +794,11 @@ public class Game {
     }
 
 
+    public void optionCompanyReports(){
+        console.companyReports(this);
+    }
+
+
     private void addEmployee(Employee employee){
         if (employees.size() >= Conf.MAX_AVAILABLE_EMPLOYEES) employees.remove(0);
         employees.add(employee);
@@ -890,6 +920,8 @@ public class Game {
 
     private void checkWinningScenario(){
 
+        // LOOSING CONDITIONS
+
         // game over if money below 0
         if (company.getMoney() < 0.0){
             console.info("YOU LOST! Your company has no money to function properly.");
@@ -907,5 +939,14 @@ public class Game {
                 System.exit(0);
             }
 
+
+        // WINNING CONDITIONS
+
+        if (company.countWinningProjects() >= Conf.VALID_PROJECTS_TO_WIN_COUNT)
+            if (company.getMoney() > Conf.START_MONEY){
+                console.info("YOU WON! Your company completed and got paid for three big projects, and has more money than at the beginning. Good work!");
+                console.gameOver();
+                System.exit(0);
+            }
     }
 }

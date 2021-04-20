@@ -497,4 +497,48 @@ public class Company {
             transactionsIn.add(project.getTransaction());
         }
     }
+
+
+    public List<Project> getValidComplexProjectsPayed(){
+        // valid means projects that meet winning conditions
+        // where player was not involved in coding or testing
+        List<Project> projects = new ArrayList<>();
+        for(Project project:returnedProjects) {
+            if (project.getTechnologies().size() < Conf.VALID_PROJECTS_TO_WIN_MIN_TECHS) continue;
+            if (project.isPlayerInvolved()) continue;
+            if (project.getTransaction() == null) continue;
+            if (project.getTransaction().isPayed())
+                projects.add(project);
+        }
+        return projects;
+    }
+
+
+    public List<Project> getValidComplexProjectsWithSeller(){
+        // for player to win the game
+        // there must be at least one valid complex project negotiated by a seller
+        List<Project> projects = new ArrayList<>();
+        for(Project project:getValidComplexProjectsPayed()) {
+            if (project.getTransaction() == null) continue;
+            if (project.getTransaction().isPayed())
+                projects.add(project);
+        }
+        return projects;
+    }
+
+
+    public Integer countWinningProjects(){
+
+        // winning projects is a group of projects
+        // where player has not been involved in a coding or testing
+        // and there must by at least one project negotiated by a seller
+        // if there are many payed valid complex projects
+        // but none of those was negotiated by a seller
+        // then this method should return 0
+        // otherwise it should return a count of those valid projects
+
+        return (getValidComplexProjectsWithSeller().size() > 0)
+                ? getValidComplexProjectsPayed().size()
+                : 0;
+    }
 }
