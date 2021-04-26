@@ -19,8 +19,6 @@ import java.util.Scanner;
 
 public class Game {
 
-    // FIELDS
-
     private LocalDate currentDate;
     private final List<Client> clients;
     private final List<Project> projects;
@@ -32,8 +30,6 @@ public class Game {
     private Boolean isPaymentTime;
     public Console console;
 
-
-    // CONSTRUCTORS
 
     public Game(){
         clients = new ArrayList<>();
@@ -57,11 +53,8 @@ public class Game {
     }
 
 
-    // PUBLIC METHODS
-
     public Company getCompany() { return company; }
     public LocalDate getCurrentDate() { return currentDate; }
-
 
 
     private void addNewProject(){
@@ -109,6 +102,7 @@ public class Game {
                     "Payment advance, '" + prj.getName() + "' project from " + prj.getClient().getName()
             ));
         }
+        console.info("You agreed to work on " + prj.getName() + " project.");
         advanceNextDay();
     }
 
@@ -197,7 +191,7 @@ public class Game {
 
             // if code is completed there's no point to work on it anymore
             if (technology.isCodeCompleted()){
-                console.info(project.getName() + " project has code already completed.");
+                console.info(project.getName() + " project has code for " + technology.getName() + " technology already completed.");
                 return;
             }
 
@@ -209,23 +203,23 @@ public class Game {
 
             // if player can actually work on tech
             technology.setCodeDaysDonePlus(1);
+            console.info("You spent one day on CODING for " + technology.getName() + " tech for " + project.getName() + " project.");
 
             // player has a chance of "lucky test day"
             // when the code is so good that free test day for that tech is received automatically
-            technology.setLuckyTestDayForPlayer();
+            console.info(technology.setLuckyTestDayForPlayer());
 
             // mark project as touched by the player
             // (this project won't be counted towards winning scenario)
             project.setPlayerAsInvolved();
 
-            console.info("You spent one day on CODING for " + technology.getName() + " tech for " + project.getName() + " project.");
             advanceNextDay();
             return;
         }
 
         if (workType.equals("test")){
 
-            // if no code, no tests
+            // if no code - no tests
             if (technology.getCodeDaysDone() == 0){
                 console.info("No code for " + technology.getName() + " technology was written. There's nothing to test for.");
                 return;
@@ -284,7 +278,6 @@ public class Game {
         } while (key != 'y');
 
         // HANDLE THINGS CAUSED BY RETURN OF THE PROJECT
-        project.setReturnDate(currentDate);
         company.addToReturnedProjects(project);
         company.removeProject(project);
 
@@ -354,7 +347,8 @@ public class Game {
             int delayDays = project.getDaysOfDelay(currentDate);
             if (delayDays > 0) {
                 if (delayDays <= 7)
-                    money -= project.getPenaltyPrice();
+                    if (!project.isPenaltyAvoidedWithinWeekOfDelay())
+                        money -= project.getPenaltyPrice();
                 else
                     money -= project.getPenaltyPrice() * 2.0;
                 console.info("Project has been delayed by days: " + delayDays + ". The price client will pay will be lower, as penalty for the delay will be deducted from it.");
@@ -598,7 +592,7 @@ public class Game {
         if (searchDaysForEmployees % 5 == 0) {
             addEmployee(new Employee());
             searchDaysForEmployees = 0;
-            console.info("Your search for employees was successful. A potential candidate found. Check employee for hire option.");
+            console.info("Your search for employees was successful. A potential candidate has been found. Check employee for hire option.");
         } else {
             console.info("You spent a day on employee search. No success so far.");
         }
@@ -753,7 +747,7 @@ public class Game {
                     tr.setAsApproved();
                 console.info("You approved all pending transactions.");
                 advanceNextDay();
-                break;
+                return;
 
             // process selected transactions
             default:
@@ -835,12 +829,16 @@ public class Game {
 
         // PEOPLE WORK
 
+        // set sickness state for employees
+        for(Employee employee:company.getEmployees())
+            employee.setSickness();
+
         // contractors and employees don't work during weekends
         if (currentDate.getDayOfWeek().getValue() < 6){
-            company.processSellersDailyWork(projects, clients);
-            company.processTestersDailyWork();
-            company.processContractorsDailyWork();
-            company.processProgrammersDailyWork();
+            console.info(company.processSellersDailyWork(projects));
+            console.info(company.processTestersDailyWork());
+            console.info(company.processContractorsDailyWork());
+            console.info(company.processProgrammersDailyWork());
         }
 
 
@@ -872,44 +870,26 @@ public class Game {
 
         // TRANSACTIONS
 
-        company.processReturnedProjectsPayments(currentDate);
+        company.processReturnedProjectsPayments();
 
         // transactions IN (company's income)
-        company.processTransactionsIn(currentDate);
+        console.info(company.processTransactionsIn(currentDate));
         // transactions OUT (company's costs)
-        company.processTransactionsOut(currentDate);
+        console.info(company.processTransactionsOut(currentDate));
 
 
         // HANDLING UNPAID EMPLOYEES
         List<Transaction> unpaidSalaries = company.getUnpaidSalaries(currentDate);
-        System.out.println(unpaidSalaries.size());
         if (currentDate.getDayOfMonth() == 25 && unpaidSalaries.size() > 0)
             for(Transaction tr:unpaidSalaries){
                 company.processEmployeeCurrentMonthPayment(tr.getEmployee(), currentDate);
                 company.processEmployeesCosts();
                 company.removeEmployee(tr.getEmployee());
-                System.out.println(
-                        "(INFO) " + tr.getEmployee().getEmployeeRole() + ", " + tr.getEmployee().getName() +
-                                " has not received salary for previous month and decided to leave the company."
+                console.info(
+                        tr.getEmployee().getEmployeeRole() + ", " + tr.getEmployee().getName() +
+                            " has not received salary for previous month and decided to leave the company."
                 );
             }
-
-
-        // test
-        if (Conf.TEST_MODE_ENABLED){
-            System.out.println("<< TEST_MODE:");
-            System.out.println("TRANSACTIONS OUT:");
-            for(Transaction tr:company.getTransactionsOut())
-                System.out.println(
-                    tr.getMoney() +" "+ tr.getProcessDate().toString() +" "+ tr.getDescription()
-                    + (tr.isSalary()?" SALARY ":"") + (tr.isMandatoryCost()?" COST ":"")
-                );
-            System.out.println("TRANSACTIONS IN:");
-            for(Transaction tr:company.getTransactionsIn())
-                System.out.println(tr.getMoney() +" "+ tr.getProcessDate().toString() +" "+ tr.getDescription());
-            System.out.println(">>");
-
-        }
 
         currentDate = currentDate.plusDays(1);
         console.summary(this);

@@ -1,5 +1,6 @@
 package com.company.people;
 
+import com.company.Console;
 import com.company.assets.Conf;
 import com.company.assets.Lang;
 import com.company.assets.Tool;
@@ -15,16 +16,14 @@ public class Employee extends Person{
 
     private final String role;
     private LocalDate hireDate;
-    private LocalDate fireDate;
     private Integer searchDaysForClients;
     private final Double payForHourBase;
     private final Double payForHourBonus;
     private List<String> skills;
     private Integer skipDayPercentChance;
     private Integer sickDays;
+    private final Console console;
 
-
-    // CONSTRUCTORS
 
     public Employee(){
         role = generateEmployeeRole();
@@ -37,19 +36,16 @@ public class Employee extends Person{
 
         payForHourBase = generatePayForHourBase();
         payForHourBonus = generatePayForHourBonus();
-
         sickDays = 0;
+
+        console = new Console();
     }
 
-
-
-    // GETTERS
 
     public Boolean isProgrammer() { return role.equals("Programmer"); }
     public Boolean isSeller() { return role.equals("Seller"); }
     public Boolean isTester() { return role.equals("Tester"); }
     public LocalDate getHireDate() { return hireDate; }
-    public LocalDate getFireDate() { return fireDate; }
     public Integer getSearchDaysForClients() { return searchDaysForClients; }
     public String getEmployeeRole() { return role; }
     public  List<String> getSkills() { return skills; }
@@ -59,24 +55,16 @@ public class Employee extends Person{
     public Double getMonthlySalary() {
         return (payForHourBase + payForHourBonus) * 8.0 * 30.0;
     }
+    public Boolean isSick() { return sickDays > 0; }
     public Integer getSickDays() { return sickDays; }
 
 
-    // SETTERS
-
     public void setHireDate(LocalDate hireDate) { this.hireDate = hireDate; }
-    public void setFireDate(LocalDate fireDate) { this.fireDate = fireDate; }
     public void setSearchDaysForClientsPlus(int days) { searchDaysForClients += days; }
     public void resetSearchDays() { searchDaysForClients = 0; }
-    public void setSickDays(int days) { sickDays = days; }
-    public void decreaseSickDays() { if (sickDays > 0) sickDays -= 1;
-    }
 
-
-    // OTHER METHODS
 
     private String generateEmployeeRole(){
-
         // by default a chance for employee's type is:
         // 25% seller, 25% tester, 50% programmer
         int rnd = Tool.randInt(1,100);
@@ -116,7 +104,7 @@ public class Employee extends Person{
             // bonus for programmers depends on number of techs programmer knows
             salaryBonus += (double) skills.size() * Conf.PAY_FOR_HOUR_EMPLOYEE_PROGRAMMER_TECH_BONUS;
             // bonus also depends on how reliable programmer is (skipDayPercentChance)
-            salaryBonus += (double) (Conf.PROGRAMMER_SKIP_DAY_MAX_PERCENT_CHANCE - skipDayPercentChance);
+            salaryBonus += Conf.PROGRAMMER_SKIP_DAY_MAX_PERCENT_CHANCE - skipDayPercentChance;
         }
 
         return salaryBonus;
@@ -130,24 +118,21 @@ public class Employee extends Person{
     }
 
 
-    public Boolean isSick(){
+    public void setSickness(){
         // sickness handling
 
         // if employee is healthy, then there's always a chance to catch a disease
-        if (sickDays == 0)
+        if (sickDays <= 0)
             if (Tool.randInt(1,100) <= Conf.EMPLOYEE_SICKNESS_CHANCE){
                 sickDays = Tool.randInt(1,Conf.EMPLOYEE_SICKNESS_DAYS_MAX);
-                System.out.println("(INFO) " + role + ", " + getName() + " got sick. Estimated away days: " + sickDays + "\n");
-                return true;
+                console.info(role + ", " + getName() + " got sick. Estimated away days: " + sickDays);
+                return;
             }
 
         if (sickDays > 0) {
             sickDays -= 1;
             if (sickDays == 0)
-                System.out.println("(INFO) " + role + ", " + getName() + " is healthy now.\n");
-            return true;
+                console.info(role + ", " + getName() + " is healthy now.");
         }
-
-        return false;
     }
 }

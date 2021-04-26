@@ -21,18 +21,19 @@ public class Console {
 
 
     public void welcomeMessage(){
-        System.out.println("""
-        # IT SOFTWARE COMPANY SIMULATOR
-        # You start with some amount of money. You have no office, no employees, no clients.
-        # You know how to program in Java, have some knowledge of databases, and you can do some front-end work.
-        # You can also configure a webpage using Wordpress, and implement e-commerce solution using Prestashop.
-        # You can't create mobile apps. For that you need to make a deal with a contractor, hire an employee, or avoid such projects.
+        System.out.print("""
+        IT SOFTWARE COMPANY SIMULATOR
+        You start with some amount of money. You have no office, no employees, no clients.
+        You know how to program in Java, have some knowledge of databases, and you can do some front-end work.
+        You can also configure a webpage using Wordpress, and implement e-commerce solution using Prestashop.
+        You can't create mobile apps. For that you need to make a deal with a contractor, hire an employee, or avoid such projects.
         """);
     }
 
 
     public void mainMenu(){
         System.out.print("""
+        
         MAIN MENU
         
         \t1. New projects         3. Projects Code/Test/View   5. Contractors   7. Company tasks     9. Next day
@@ -56,12 +57,13 @@ public class Console {
 
         StringBuilder line = new StringBuilder().append("-".repeat(summary.length())).append("\n");
 
-        System.out.println(line + String.valueOf(summary) + line);
+        System.out.print("\n" + line + summary + line);
     }
 
 
     public void info(String text){
-        System.out.println("(INFO) " + text + "\n");
+        if (!text.equals(""))
+            System.out.println("-> " + text);
     }
 
 
@@ -95,7 +97,10 @@ public class Console {
         for (Project prj:projects) {
             sb.append("\t").append(++count).append(".");
             sb.append(" | ").append(prj.getName()).append(" for ").append(prj.getClient().getName());
-            sb.append(" | price: ").append(prj.getPrice()).append(" | deadline: ").append(prj.getDeadline());
+            sb.append(" | price: ").append(prj.getPrice());
+            if (prj.getSeller() != null)
+                sb.append(" (N)");
+            sb.append(" | deadline: ").append(prj.getDeadline());
             if (prj.getProgrammers().size() > 0){
                 sb.append(" | programmers: ");
                 for(Employee programmer:prj.getProgrammers())
@@ -129,13 +134,17 @@ public class Console {
 
 
     public void employeesForHire(List<Employee> employees){
-        StringBuilder sb = new StringBuilder("EMPLOYEES FOR HIRE:\n");
+        StringBuilder sb = new StringBuilder("EMPLOYEES FOR HIRE:\n\n");
         int count = 0;
         for (Employee employee : employees) {
-            sb.append("\t").append(++count).append(". ").append(employee.getName());
-            sb.append(" (").append(employee.getEmployeeRole().toLowerCase()).append(") | monthly salary: ").append(employee.getMonthlySalary());
+            sb.append("\t").append(++count).append(". ").append(employee.getName()).append(" (").append(employee.getEmployeeRole().toLowerCase());
+            if (employee.isProgrammer()) {
+                sb.append(": ");
+                for (String skill:employee.getSkills())
+                    sb.append(skill).append(" ");
+            }
+            sb.append(") | monthly salary: ").append(employee.getMonthlySalary()).append("\n");
         }
-        sb.append("\n");
         System.out.println(sb);
     }
 
@@ -151,28 +160,33 @@ public class Console {
 
 
     public void testers(Company company){
-        System.out.println("COMPANY'S TESTERS:\n");
+        StringBuilder sb = new StringBuilder("COMPANY'S TESTERS:\n\n");
         Project project;
         int count = 0;
         for(Employee tester:company.getTesters()) {
             project = company.getProjectTesterIsAssignedTo(tester);
-            System.out.print("\t" + ++count + ". " + tester.getName()
-                    + (project == null ? " (unassigned)" : ", works on " + project.getName() + " project") + "\n");
+            sb.append("\t").append(++count).append(". ").append(tester.getName()).append(project == null ? " (unassigned)" : ", works on " + project.getName() + " project").append("\n");
         }
+        System.out.println(sb);
     }
 
 
     public void programmers(Company company){
-        System.out.println("COMPANY'S PROGRAMMERS:\n");
+        StringBuilder sb = new StringBuilder("COMPANY'S PROGRAMMERS:\n\n");
         Project prj;
         int count = 0;
         for(Employee programmer:company.getProgrammers()) {
             prj = company.getProjectProgrammerIsAssignedTo(programmer);
-            System.out.print("\t" + ++count + ". " + programmer.getName());
+            sb.append("\t").append(++count).append(". ").append(programmer.getName());
+            sb.append(" ( ");
+            for(String skill:programmer.getSkills())
+                sb.append(skill).append(" ");
+            sb.append(")");
             if (prj != null)
-                System.out.print(", works on " + prj.getName() + " project");
-            System.out.println();
+                sb.append(" works on ").append(prj.getName()).append(" project");
+            sb.append("\n");
         }
+        System.out.println(sb);
     }
 
 
@@ -304,6 +318,8 @@ public class Console {
         for (Employee programmer:company.getProgrammers()){
             sb.append("\t").append(programmer.getName());
             project = company.getProjectProgrammerIsAssignedTo(programmer);
+            if (programmer.isSick())
+                sb.append(" (SICK: ").append(programmer.getSickDays()).append(")");
             if (project == null)
                 sb.append(" (UNASSIGNED)");
             else
@@ -318,6 +334,8 @@ public class Console {
         for (Employee tester:company.getTesters()){
             sb.append("\t").append(tester.getName());
             project = company.getProjectTesterIsAssignedTo(tester);
+            if (tester.isSick())
+                sb.append(" (SICK: ").append(tester.getSickDays()).append(")");
             if (project == null)
                 sb.append(" (UNASSIGNED)");
             else
@@ -328,6 +346,8 @@ public class Console {
         sb.append("SELLERS:\n");
         for (Employee seller:company.getSellers()){
             sb.append("\t").append(seller.getName());
+            if (seller.isSick())
+                sb.append(" (SICK, days left: ").append(seller.getSickDays()).append(")");
             sb.append(" | salary: ").append(seller.getMonthlySalary()).append("\n");
         }
 
@@ -350,14 +370,12 @@ public class Console {
     public void companyReports(Game game){
 
         System.out.println(
-                "COMPANY'S REPORTS\n\n" + "----------\n" +
-                "CONDITIONS TO WIN:\n\n" +
+                "COMPANY'S REPORTS - CONDITIONS TO WIN:\n\n" +
                 "\t1) Payments for complex projects(*): " + game.getCompany().getValidComplexProjectsPayed().size() + "/" + Conf.VALID_PROJECTS_TO_WIN_COUNT + "\n" +
                 "\t2) Complex projects negotiated by a seller: " + game.getCompany().getValidComplexProjectsWithSeller().size() + "/1" + "\n" +
                 "\t3) Current amount of money higher than at the game's start: " + ((game.getCompany().getMoney() > Conf.START_MONEY) ? "YES" : "NO") + "\n\n" +
                 "(*) complex projects are projects with at least " + Conf.VALID_PROJECTS_TO_WIN_MIN_TECHS + " techs and company's owner was not involved in any coding or testing\n" +
-                "    also at least one of those projects needs to be negotiated by one of company's sellers\n" +
-                "----------\n"
+                "    also at least one of those projects needs to be negotiated by one of company's sellers\n"
         );
     }
 

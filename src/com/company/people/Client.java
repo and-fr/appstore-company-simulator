@@ -12,19 +12,7 @@ public class Client extends Person {
     private Integer problemsFromNotWorkingProjectChance;
 
 
-    // GETTERS
-
-    public Integer getPaymentDelayWeekChance() { return paymentDelayWeekChance; }
-    public Integer getPaymentDelayMonthChance() { return paymentDelayMonthChance; }
-    public Integer getPaymentNeverChance() { return paymentNeverChance; }
-    public Integer getDelayWeekPenaltyAvoidChance() { return delayWeekPenaltyAvoidChance; }
-    public Integer getProblemsFromNotWorkingProjectChance() { return problemsFromNotWorkingProjectChance; }
-
-
-    // CONSTRUCTORS
-
     public Client(){
-
         // default values
         paymentDelayWeekChance = 0;
         paymentDelayMonthChance = 0;
@@ -51,5 +39,11 @@ public class Client extends Person {
         }
     }
 
+
+    public Integer getPaymentDelayWeekChance() { return paymentDelayWeekChance; }
+    public Integer getPaymentDelayMonthChance() { return paymentDelayMonthChance; }
+    public Integer getPaymentNeverChance() { return paymentNeverChance; }
+    public Integer getDelayWeekPenaltyAvoidChance() { return delayWeekPenaltyAvoidChance; }
+    public Integer getProblemsFromNotWorkingProjectChance() { return problemsFromNotWorkingProjectChance; }
 
 }

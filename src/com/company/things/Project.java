@@ -14,8 +14,6 @@ import java.util.*;
 
 public class Project {
 
-    // FIELDS
-
     private final Client client;
     private final String name;
     private final List<Technology> technologies;
@@ -25,18 +23,15 @@ public class Project {
     private final Boolean isProblemFromNotWorkingProject;
     private Boolean isPlayerInvolved;
     private LocalDate startDate;
-    private LocalDate returnDate;
     private final Integer totalWorkDaysNeeded;
     private Employee seller;
     private Employee tester;
-    private List<Employee> programmers;
-    private Double price;
+    private final List<Employee> programmers;
+    private final Double price;
     private Double priceBonus;
     private Transaction transaction;
-    private Double paymentAdvance;
+    private final Double paymentAdvance;
 
-
-    // CONSTRUCTORS
 
     public Project(Client client){
         this.client = client;
@@ -58,8 +53,6 @@ public class Project {
     }
 
 
-    // GETTERS
-
     public Client getClient() { return client; }
     public Employee getSeller() { return seller; }
     public Employee getTester() { return tester; }
@@ -68,24 +61,38 @@ public class Project {
     public List<Technology> getTechnologies(){ return technologies; }
     public Integer getPaymentDelayDays() { return paymentDelayDays; }
     public Boolean isPaymentNever() { return isPaymentNever; }
-    public Boolean isPenaltyAvoidedWithinWeekOfDelay() { return isPenaltyAvoidedWithinWeekOfDelay; }
     public Boolean isProblemFromNotWorkingProject() { return isProblemFromNotWorkingProject; }
-    public LocalDate getStartDate() { return startDate; }
+    public Boolean isPenaltyAvoidedWithinWeekOfDelay() { return isPenaltyAvoidedWithinWeekOfDelay; }
     public Integer getTotalWorkDaysNeeded() { return totalWorkDaysNeeded; }
     public Boolean isNegotiatedBySeller() { return seller != null; }
     public Boolean isPlayerInvolved() { return isPlayerInvolved; }
     public Transaction getTransaction() { return transaction; }
     public Double getPaymentAdvance() { return paymentAdvance; }
-
-    public LocalDate getDeadline() {
-        // deadline date is calculated from start date
-        // by adding totalWorkDaysNeeded for the project
-        return startDate.plusDays((long)totalWorkDaysNeeded);
+    public Double getPrice() { return price + priceBonus; }
+    public Double getPriceBonus() { return priceBonus; }
+    public LocalDate getDeadline() { return startDate.plusDays((long)totalWorkDaysNeeded); }
+    public Boolean isTesterAssigned() {
+        return tester != null;
+    }
+    public Integer getCodeCompletionPercent(){ return (int) (((double)getCodeDaysDone() / (double)getCodeDaysNeeded()) * 100.0); }
+    public Integer getTestCompletionPercent(){ return (int) (((double)getTestDaysDone() / (double)getCodeDaysNeeded()) * 100.0); }
+    public Integer getCompletionPercent(){
+        return (getCodeCompletionPercent() + getTestCompletionPercent()) / 2;
+    }
+    public Integer getDaysOfDelay(LocalDate gameDate) {
+        return (int) ChronoUnit.DAYS.between(getDeadline(), gameDate);
     }
 
 
-    public Double getPrice() { return price + priceBonus; }
-    public Double getPriceBonus() { return priceBonus; }
+    public void addProgrammer(Employee programmer) { programmers.add(programmer); }
+    public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
+    public void setSeller(Employee seller) { this.seller = seller; }
+    public void setTester(Employee tester) { this.tester = tester; }
+    public void setPlayerAsInvolved() { isPlayerInvolved = true; }
+    public void removeTester() { tester = null; }
+    public void removeProgrammer(Employee programmer) { programmers.remove(programmer); }
+    public void setTransaction(Transaction transaction) { this.transaction = transaction; }
+    public void removeAllProgrammers() { programmers.clear(); }
 
 
     public Double generatePrice(){
@@ -147,30 +154,6 @@ public class Project {
     }
 
 
-    public Integer getTotalWorkDaysDone(){
-        int days = 0;
-        for (Technology tech:technologies)
-            days += tech.getCodeDaysDone();
-        return days;
-    }
-
-
-    public Boolean isCodeCompleted(){
-        for (Technology tech:technologies)
-            if (tech.getCodeDaysDone() < tech.getCodeDaysNeeded())
-                return false;
-        return true;
-    }
-
-
-    public Boolean isTestCompleted(){
-        for (Technology tech:technologies)
-            if (tech.getTestDaysDone() < tech.getCodeDaysDone())
-                return false;
-        return true;
-    }
-
-
     public Boolean isFinished(){
         for (Technology tech:technologies){
             if (tech.getCodeDaysDone() < tech.getCodeDaysNeeded())
@@ -182,42 +165,11 @@ public class Project {
     }
 
 
-    public Boolean hasMobileTech(){
-        for (Technology tech:technologies)
-            if (tech.getName().equals("Mobile"))
-                return true;
-        return false;
-    }
-
-
-    public Boolean isTesterAssigned() {
-        return tester != null;
-    }
 
     public Boolean isProgrammerAssigned(Employee programmer) {
         for(Employee employee:programmers)
             if (employee.equals(programmer)) return true;
         return false;
-    }
-
-
-    public Integer getCodeCompletionPercent(){
-        return (int) (((double)getCodeDaysDone() / (double)getCodeDaysNeeded()) * 100.0);
-    }
-
-
-    public Integer getTestCompletionPercent(){
-        return (int) (((double)getTestDaysDone() / (double)getCodeDaysNeeded()) * 100.0);
-    }
-
-
-    public Integer getCompletionPercent(){
-        return (getCodeCompletionPercent() + getTestCompletionPercent()) / 2;
-    }
-
-
-    public Integer getDaysOfDelay(LocalDate gameDate) {
-        return (int) ChronoUnit.DAYS.between(getDeadline(), gameDate);
     }
 
 
@@ -237,24 +189,8 @@ public class Project {
     }
 
 
-    // SETTERS
-
-    public void addProgrammer(Employee programmer) { programmers.add(programmer); }
-    public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
-    public void setReturnDate(LocalDate returnDate) { this.returnDate = returnDate; }
-    public void setSeller(Employee seller) { this.seller = seller; }
-    public void setTester(Employee tester) { this.tester = tester; }
-    public void setPlayerAsInvolved() { isPlayerInvolved = true; }
-    public void removeTester() { tester = null; }
-    public void removeProgrammer(Employee programmer) { programmers.remove(programmer); }
-    public void setTransaction(Transaction transaction) { this.transaction = transaction; }
-
-
-    // OTHER METHODS
-
     private String generateProjectName(){
-        int index = Tool.randInt(0, Lang.projectNames.length - 1);
-        return Lang.projectNames[index];
+        return Lang.projectNames[Tool.randInt(0, Lang.projectNames.length - 1)];
     }
 
 

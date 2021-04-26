@@ -14,13 +14,7 @@ public class Contractor extends Person{
     private final Double payForHour;
     private final Boolean finishOnTime;
     private final Boolean noErrors;
-    private List<String> skills;
-
-
-    public Double getPayForHour() { return payForHour; }
-    public Boolean isFinishOnTime() { return finishOnTime; }
-    public Boolean isNoErrors() { return noErrors; }
-    public List<String> getSkills() { return skills; }
+    private final List<String> skills;
 
 
     public Contractor(Double payForHour, Boolean finishOnTime, Boolean noErrors) {
@@ -31,12 +25,16 @@ public class Contractor extends Person{
     }
 
 
+    public Double getPayForHour() { return payForHour; }
+    public Boolean isFinishOnTime() { return finishOnTime; }
+    public Boolean isNoErrors() { return noErrors; }
+    public List<String> getSkills() { return skills; }
+
+
     private List<String> generateSkills(){
         List<String> skills = new ArrayList<>(Arrays.asList(Lang.technologyNames));
         Collections.shuffle(skills);
         return skills.subList(0, Tool.randInt(1, skills.size()));
     }
-
-
 
 }

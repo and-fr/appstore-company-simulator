@@ -7,7 +7,6 @@ public class Conf {
     // BOOLEANS
 
     public static final Boolean START_COMPANY_HAS_OFFICE = false;
-    public static final Boolean TEST_MODE_ENABLED = true;
 
 
     // DOUBLES
