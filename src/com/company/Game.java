@@ -19,42 +19,25 @@ import java.util.Scanner;
 
 public class Game {
 
-    private LocalDate currentDate;
-    private final List<Client> clients;
-    private final List<Project> projects;
-    private final List<Contractor> contractors;
-    private final List<Employee> employees;
-    private final Company company;
-    private Integer searchDaysForClients;
-    private Integer searchDaysForEmployees;
-    private Boolean isPaymentTime;
-    public Console console;
+    public LocalDate currentDate = Conf.START_DATE;
+    private final List<Client> clients = new ArrayList<>();
+    private final List<Project> projects = new ArrayList<>();
+    private final List<Contractor> contractors = new ArrayList<>();
+    private final List<Employee> employees = new ArrayList<>();
+    public final Company company = new Company();
+    private Integer searchDaysForClients = 0;
+    private Integer searchDaysForEmployees = 0;
+    private Boolean isPaymentTime = true;
+    public Console console = new Console();
 
 
     public Game(){
-        clients = new ArrayList<>();
-        projects = new ArrayList<>();
-        contractors = new ArrayList<>();
-        employees = new ArrayList<>();
-        company = new Company();
-
-        currentDate = Conf.START_DATE;
-        searchDaysForClients = 0;
-        searchDaysForEmployees = 0;
-        isPaymentTime = true;
-
         generateInitialClients();
         generateInitialProjects();
         generateInitialContractors();
         generateInitialEmployees();
-
-        console = new Console();
         console.welcomeMessage();
     }
-
-
-    public Company getCompany() { return company; }
-    public LocalDate getCurrentDate() { return currentDate; }
 
 
     private void addNewProject(){
@@ -67,7 +50,7 @@ public class Game {
 
     public void optionAvailableProjects(){
 
-        if (company.getProjects().size() >= Conf.MAX_COMPANY_PROJECTS_AT_A_TIME){
+        if (company.projects.size() >= Conf.MAX_COMPANY_PROJECTS_AT_A_TIME){
             console.info(
                 "Your company can handle only " + Conf.MAX_COMPANY_PROJECTS_AT_A_TIME +
                 " projects at a time. Finish some current projects first."
@@ -92,17 +75,17 @@ public class Game {
 
         // if player selects a valid project then the project is added to company's projects
         Project prj = projects.get(selectedProjectNum - 1);
-        company.addProject(prj);
+        company.projects.add(prj);
         projects.remove(selectedProjectNum - 1);
-        prj.setStartDate(currentDate);
-        if (prj.getPaymentAdvance() > 0.0){
-            company.addTransactionIn(new Transaction(
-                    prj.getPaymentAdvance(),
+        prj.startDate = currentDate;
+        if (prj.paymentAdvance > 0.0){
+            company.transactionsIn.add(new Transaction(
+                    prj.paymentAdvance,
                     currentDate.plusDays(Conf.PROJECT_PAYMENT_ADVANCE_AFTER_DAYS),
-                    "Payment advance, '" + prj.getName() + "' project from " + prj.getClient().getName()
+                    "Payment advance, '" + prj.name + "' project from " + prj.client.getName()
             ));
         }
-        console.info("You agreed to work on " + prj.getName() + " project.");
+        console.info("You agreed to work on " + prj.name + " project.");
         advanceNextDay();
     }
 
@@ -122,7 +105,7 @@ public class Game {
 
     public void optionProgramming(){
 
-        if (company.getProjects().size() == 0){
+        if (company.projects.size() == 0){
             console.info("Your company has no any projects.");
             return;
         }
@@ -134,7 +117,7 @@ public class Game {
         char key;
 
         // MENU: PROJECT LEVEL
-        console.menuProjectsCurrent(company.getProjects());
+        console.menuProjectsCurrent(company.projects);
         console.actionMessage("Type a number of a project you would like to CODE/TEST for");
 
         while (project == null){
@@ -142,13 +125,13 @@ public class Game {
             if (key == '0') return;
 
             selectedNum = Character.getNumericValue(key);
-            if (selectedNum >= 1 && selectedNum <= company.getProjects().size())
-                project = company.getProjects().get(selectedNum - 1);
+            if (selectedNum >= 1 && selectedNum <= company.projects.size())
+                project = company.projects.get(selectedNum - 1);
         }
 
         // if all code and tests are completed there's no point to work on project anymore
         if (project.isFinished()){
-            console.info(project.getName() + " project has all code and tests already completed.");
+            console.info(project.name + " project has all code and tests already completed.");
             return;
         }
 
@@ -161,18 +144,18 @@ public class Game {
             if (key == '0') return;
 
             selectedNum = Character.getNumericValue(key);
-            if (selectedNum >= 1 && selectedNum <= project.getTechnologies().size())
-                technology = project.getTechnologies().get(selectedNum - 1);
+            if (selectedNum >= 1 && selectedNum <= project.technologies.size())
+                technology = project.technologies.get(selectedNum - 1);
         }
 
         // if all code and tests for technology are completed there's no point to work on it anymore
         if (technology.isFinished()){
-            console.info(technology.getName() + " technology for this project has all code and tests already completed.");
+            console.info(technology.name + " technology for this project has all code and tests already completed.");
             return;
         }
 
         // check if tech is Mobile - player can't work on this, need to hire someone else
-        if (technology.getName().equals("Mobile")){
+        if (technology.name.equals("Mobile")){
             console.info("You can't work on Mobile technology. You need to get a contractor or hire a programmer.");
             return;
         }
@@ -191,7 +174,7 @@ public class Game {
 
             // if code is completed there's no point to work on it anymore
             if (technology.isCodeCompleted()){
-                console.info(project.getName() + " project has code for " + technology.getName() + " technology already completed.");
+                console.info(project.name + " project has code for " + technology.name + " technology already completed.");
                 return;
             }
 
@@ -202,8 +185,8 @@ public class Game {
             }
 
             // if player can actually work on tech
-            technology.setCodeDaysDonePlus(1);
-            console.info("You spent one day on CODING for " + technology.getName() + " tech for " + project.getName() + " project.");
+            technology.codeDaysDone += 1;
+            console.info("You spent one day on CODING for " + technology.name + " tech for " + project.name + " project.");
 
             // player has a chance of "lucky test day"
             // when the code is so good that free test day for that tech is received automatically
@@ -211,7 +194,7 @@ public class Game {
 
             // mark project as touched by the player
             // (this project won't be counted towards winning scenario)
-            project.setPlayerAsInvolved();
+            project.isPlayerInvolved = true;
 
             advanceNextDay();
             return;
@@ -220,25 +203,25 @@ public class Game {
         if (workType.equals("test")){
 
             // if no code - no tests
-            if (technology.getCodeDaysDone() == 0){
-                console.info("No code for " + technology.getName() + " technology was written. There's nothing to test for.");
+            if (technology.codeDaysDone == 0){
+                console.info("No code for " + technology.name + " technology was written. There's nothing to test for.");
                 return;
             }
 
             // if days of tests are equal to code days
             // this indicates all written code has already been tested
-            if (technology.getTestDaysDone() >= technology.getCodeDaysDone()){
-                console.info("All code for " + technology.getName() + " technology has been already tested.");
+            if (technology.testDaysDone >= technology.codeDaysDone){
+                console.info("All code for " + technology.name + " technology has been already tested.");
                 return;
             }
 
-            technology.setTestDaysDonePlus(1);
+            technology.testDaysDone += 1;
 
             // mark project as touched by the player
             // (this project won't be counted towards winning scenario)
-            project.setPlayerAsInvolved();
+            project.isPlayerInvolved = true;
 
-            console.info("You spent one day on TESTING the code for " + technology.getName() + " tech for " + project.getName() + " project.");
+            console.info("You spent one day on TESTING the code for " + technology.name + " tech for " + project.name + " project.");
             advanceNextDay();
         }
     }
@@ -246,7 +229,7 @@ public class Game {
 
     public void optionReturnProject(){
 
-        if (company.getProjects().size() == 0){
+        if (company.projects.size() == 0){
             console.info("Your company has no any projects.");
             return;
         }
@@ -256,7 +239,7 @@ public class Game {
         int selectedNum;
 
         // MENU: PROJECT SELECTION LEVEL
-        console.menuProjectsCurrent(company.getProjects());
+        console.menuProjectsCurrent(company.projects);
         console.actionMessage("Type a number of a project you would like to RETURN to client");
 
         while (project == null) {
@@ -264,10 +247,10 @@ public class Game {
             if (key == '0') return;
 
             selectedNum = Character.getNumericValue(key);
-            if (!(selectedNum >= 1 && selectedNum <= company.getProjects().size()))
+            if (!(selectedNum >= 1 && selectedNum <= company.projects.size()))
                 continue;
 
-            project = company.getProjects().get(selectedNum - 1);
+            project = company.projects.get(selectedNum - 1);
         }
 
         // MENU: CONFIRMATION LEVEL
@@ -278,22 +261,22 @@ public class Game {
         } while (key != 'y');
 
         // HANDLE THINGS CAUSED BY RETURN OF THE PROJECT
-        company.addToReturnedProjects(project);
-        company.removeProject(project);
+        company.returnedProjects.add(project);
+        company.projects.remove(project);
 
         // DEAL WITH CONTRACTORS (payment, release)
 
-        for (Technology technology:project.getTechnologies())
+        for (Technology technology:project.technologies)
             if (technology.isContractorAssigned()){
                 // payment for contractor
-                String description = "Payment for " + technology.getContractor().getName() + ". Tech: " + technology.getName()
-                        + ". Project: " + project.getName() + ". Work days: " + technology.getContractorWorkDays() + ".";
-                company.addTransactionOut(new Transaction(technology.getContractorCost(), currentDate.plusDays(Conf.CONTRACTORS_PAY_AFTER_DAYS), description));
+                String description = "Payment for " + technology.contractor.getName() + ". Tech: " + technology.name
+                        + ". Project: " + project.name + ". Work days: " + technology.getContractorWorkDays() + ".";
+                company.transactionsOut.add(new Transaction(technology.getContractorCost(), currentDate.plusDays(Conf.CONTRACTORS_PAY_AFTER_DAYS), description));
 
                 // add contractor to available contractors global group
                 // and remove contractor from current tech
-                contractors.add(technology.getContractor());
-                technology.removeContractor();
+                contractors.add(technology.contractor);
+                technology.contractor = null;
             }
 
 
@@ -314,7 +297,7 @@ public class Game {
         // if project is at decent state (75% or more) but not fully finished
         // payment will depend on the chance generated by the start of the project
         if (project.getCompletionPercent() >= Conf.PROJECT_PERCENT_COMPLETION_MIN_ACCEPT_THRESHOLD && project.getCompletionPercent() < 100) {
-            if (project.isProblemFromNotWorkingProject()){
+            if (project.isProblemFromNotWorkingProject){
                 console.info("Unfortunately, the client decided to cancel the contract, because project was not completed. There will be no any payment.");
                 returnPaymentAdvanceForCancelledProject(project, currentDate);
                 advanceNextDay();
@@ -325,10 +308,10 @@ public class Game {
 
         // project is fully completed
         if (project.getCompletionPercent() >= 100) {
-            if (project.isPaymentNever()){
+            if (project.isPaymentNever){
                 // if clients has such trait as "will never pay" then this is an outcome for it
                 // player is notified that the project is returned, but no payment (transaction) will be ever made
-                console.info("Project '" + project.getName() + "' has been returned to client.");
+                console.info("Project '" + project.name + "' has been returned to client.");
                 advanceNextDay();
                 return;
             } else
@@ -340,14 +323,14 @@ public class Game {
         if (willPay){
 
             double money = project.getPrice();
-            LocalDate date = currentDate.plusDays(project.getPaymentDaysDue() + project.getPaymentDelayDays());
-            String desc = "Payment for '" + project.getName() + "' project from " + project.getClient().getName() + ".";
+            LocalDate date = currentDate.plusDays(project.getPaymentDaysDue() + project.paymentDelayDays);
+            String desc = "Payment for '" + project.name + "' project from " + project.client.getName() + ".";
 
             // money to pay can change if project is delayed
             int delayDays = project.getDaysOfDelay(currentDate);
             if (delayDays > 0) {
                 if (delayDays <= 7)
-                    if (!project.isPenaltyAvoidedWithinWeekOfDelay())
+                    if (!project.isPenaltyAvoidedWithinWeekOfDelay)
                         money -= project.getPenaltyPrice();
                 else
                     money -= project.getPenaltyPrice() * 2.0;
@@ -356,10 +339,10 @@ public class Game {
 
             // if payment advance for the project was payed
             // that payment advance is deducted from final project's payment
-            if (project.getPaymentAdvance() > 0.0)
-                money -= project.getPaymentAdvance();
-            project.setTransaction(new Transaction(money, date, desc));
-            console.info("Project '" + project.getName() + "' has been returned to " + project.getClient().getName()
+            if (project.paymentAdvance > 0.0)
+                money -= project.paymentAdvance;
+            project.transaction = new Transaction(money, date, desc);
+            console.info("Project '" + project.name + "' has been returned to " + project.client.getName()
                     + ". Expected payment within " + project.getPaymentDaysDue() + " days: " + money);
 
             advanceNextDay();
@@ -370,11 +353,11 @@ public class Game {
     private void returnPaymentAdvanceForCancelledProject(Project project, LocalDate currentDate){
         // if payment advance for the project was payed
         // that payment advance is deducted from final project's payment
-        if (project.getPaymentAdvance() > 0.0){
-            company.addTransactionOut(new Transaction(
-                    project.getPaymentAdvance(),
+        if (project.paymentAdvance > 0.0){
+            company.transactionsOut.add(new Transaction(
+                    project.paymentAdvance,
                     currentDate.plusDays(Conf.PROJECT_PAYMENT_ADVANCE_AFTER_DAYS),
-                    "Returned payment advance for cancelled '" + project.getName() + "' project"
+                    "Returned payment advance for cancelled '" + project.name + "' project"
             ));
         }
     }
@@ -383,7 +366,7 @@ public class Game {
     public void optionContractors(){
 
         // if company has no projects then contractors can't be hired
-        if (company.getProjects().size() == 0){
+        if (company.projects.size() == 0){
             console.info("Your company has no projects for any contractor to work on.");
             return;
         }
@@ -407,14 +390,14 @@ public class Game {
         }
 
         // MENU: PROJECTS LEVEL
-        console.menuProjectsCurrent(company.getProjects());
+        console.menuProjectsCurrent(company.projects);
         console.actionMessage("Type number of project you want contractor to work on");
         while(project == null) {
             key = Tool.getKey();
             if (key == '0') return;
             selectedNum = Character.getNumericValue(key);
-            if (selectedNum >= 1 && selectedNum <= company.getProjects().size()) {
-                project = company.getProjects().get(selectedNum - 1);
+            if (selectedNum >= 1 && selectedNum <= company.projects.size()) {
+                project = company.projects.get(selectedNum - 1);
             }
         }
 
@@ -425,31 +408,31 @@ public class Game {
             key = Tool.getKey();
             if (key == '0') return;
             selectedNum = Character.getNumericValue(key);
-            if (selectedNum >= 1 && selectedNum <= project.getTechnologies().size()) {
-                technology = project.getTechnologies().get(selectedNum - 1);
+            if (selectedNum >= 1 && selectedNum <= project.technologies.size()) {
+                technology = project.technologies.get(selectedNum - 1);
 
                 // can't hire contractor if tech was contracted previously
-                if (technology.isContractorWorkFinished()){
+                if (technology.isContractorWorkFinished){
                     console.info("Contractor worked on this tech in the past. It can't be assigned to any contractor anymore.");
                     continue;
                 }
 
                 // check if other contractor works on tech
-                if (technology.getContractor() != null){
-                    console.info("Technology " + technology.getName() + " has already contractor assigned.");
+                if (technology.contractor != null){
+                    console.info("Technology " + technology.name + " has already contractor assigned.");
                     continue;
                 }
 
                 // check if contractor has required skill
-                if (!contractor.getSkills().contains(technology.getName())){
-                    console.info("Contractor " + contractor.getName() + " doesn't know " + technology.getName() + " technology.");
+                if (!contractor.skills.contains(technology.name)){
+                    console.info("Contractor " + contractor.getName() + " doesn't know " + technology.name + " technology.");
                     continue;
                 }
 
-                technology.setContractor(contractor);
+                technology.contractor = contractor;
                 contractors.remove(contractor);
                 console.info("Contractor " + contractor.getName() + " has agreed to work on "
-                        + technology.getName() + " technology for " + project.getName() + " project.");
+                        + technology.name + " technology for " + project.name + " project.");
 
                 advanceNextDay();
             }
@@ -481,7 +464,7 @@ public class Game {
 
 
     private void optionEmployeesView(){
-        if (company.getEmployees().size() < 1)
+        if (company.employees.size() < 1)
             console.info("Your company has no employees.");
         else
             console.employeesStatus(company);
@@ -490,12 +473,12 @@ public class Game {
 
     private void optionEmployeesHire() {
 
-        if (!company.hasOffice()) {
+        if (!company.hasOffice) {
             console.info("Your company has no office. You can't hire people. Rent some office space first.");
             return;
         }
 
-        if (company.getEmployees().size() >= Conf.MAX_COMPANY_EMPLOYEES_AT_A_TIME) {
+        if (company.employees.size() >= Conf.MAX_COMPANY_EMPLOYEES_AT_A_TIME) {
             console.info("Your company can't have more than " + Conf.MAX_COMPANY_EMPLOYEES_AT_A_TIME
                     + " employees. Fire one of your current employees if you want to hire a new person.");
             return;
@@ -524,16 +507,16 @@ public class Game {
         }
 
         // check for required amount of money as hiring process is costly
-        if (company.getMoney() < Conf.EMPLOYEE_HIRE_COST){
+        if (company.money < Conf.EMPLOYEE_HIRE_COST){
             console.info("Your company has not enough of money to hire an employee.");
             return;
         }
-        company.removeMoney(Conf.EMPLOYEE_HIRE_COST);
+        company.money -= Conf.EMPLOYEE_HIRE_COST;
 
-        employee.setHireDate(currentDate);
-        company.addEmployee(employee);
+        employee.hireDate = currentDate;
+        company.employees.add(employee);
         employees.remove(employee);
-        console.info("You hired a new " + employee.getEmployeeRole().toLowerCase()
+        console.info("You hired a new " + employee.role.toLowerCase()
                 + ", " + employee.getName() + ".");
 
         advanceNextDay();
@@ -542,7 +525,7 @@ public class Game {
 
     private void optionEmployeesFire(){
 
-        if (company.getEmployees().size() < 1){
+        if (company.employees.size() < 1){
             console.info("Your company has no employees.");
             return;
         }
@@ -551,7 +534,7 @@ public class Game {
         int selectedNum;
         Employee selectedEmployee;
 
-        console.employeesForFire(company.getEmployees());
+        console.employeesForFire(company.employees);
         console.actionMessage("Type an employee number you want to fire.");
 
         while (true){
@@ -559,8 +542,8 @@ public class Game {
             if (key == '0') return;
 
             selectedNum = Character.getNumericValue(key);
-            if (selectedNum >= 1 && selectedNum <= company.getEmployees().size()) {
-                selectedEmployee = company.getEmployees().get(selectedNum - 1);
+            if (selectedNum >= 1 && selectedNum <= company.employees.size()) {
+                selectedEmployee = company.employees.get(selectedNum - 1);
                 break;
             }
         }
@@ -573,21 +556,21 @@ public class Game {
 
         company.processEmployeeCurrentMonthPayment(selectedEmployee, currentDate);
         company.processEmployeesCosts();
-        company.removeEmployee(selectedEmployee);
-        console.info("You fired a " + selectedEmployee.getEmployeeRole().toLowerCase()
+        company.employees.remove(selectedEmployee);
+        console.info("You fired a " + selectedEmployee.role.toLowerCase()
                 + ", " + selectedEmployee.getName() + ".");
         advanceNextDay();
     }
 
     public void optionEmployeesSearch(){
 
-        if (company.getMoney() < Conf.EMPLOYEE_SEARCH_COST){
+        if (company.money < Conf.EMPLOYEE_SEARCH_COST){
             console.info("Your company has no money to search for an employee.");
             return;
         }
 
         searchDaysForEmployees += 1;
-        company.removeMoney(Conf.EMPLOYEE_SEARCH_COST);
+        company.money -= Conf.EMPLOYEE_SEARCH_COST;
 
         if (searchDaysForEmployees % 5 == 0) {
             addEmployee(new Employee());
@@ -608,7 +591,7 @@ public class Game {
             return;
         }
 
-        if (company.getProjects().size() == 0){
+        if (company.projects.size() == 0){
             console.info("Your company has no any projects.");
             return;
         }
@@ -628,26 +611,26 @@ public class Game {
         Employee tester = company.getTesters().get(selectedNum - 1);
 
         // MENU: PROJECT SELECTION LEVEL
-        console.menuProjectsCurrent(company.getProjects());
+        console.menuProjectsCurrent(company.projects);
         console.actionMessage("Select a number of a project you want the tester to be assigned to");
 
         do {
             key = Tool.getKey();
             if (key == '0') return;
             selectedNum = Character.getNumericValue(key);
-        } while (selectedNum < 1 || selectedNum > company.getProjects().size());
+        } while (selectedNum < 1 || selectedNum > company.projects.size());
 
-        Project project = company.getProjects().get(selectedNum - 1);
+        Project project = company.projects.get(selectedNum - 1);
 
-        if (project.getTester() != null)
-            if (project.getTester().equals(tester)){
+        if (project.tester != null)
+            if (project.tester.equals(tester)){
                 console.info("Tester, " + tester.getName() + " is already assigned to this project.");
                 return;
             }
 
         company.removeTesterFromAnyProjects(tester);
-        project.setTester(tester);
-        console.info("Tester, " + tester.getName() + " has been assigned to work on " + project.getName() + " project.");
+        project.tester = tester;
+        console.info("Tester, " + tester.getName() + " has been assigned to work on " + project.name + " project.");
         advanceNextDay();
     }
 
@@ -659,7 +642,7 @@ public class Game {
             return;
         }
 
-        if (company.getProjects().size() == 0){
+        if (company.projects.size() == 0){
             console.info("Your company has no any projects.");
             return;
         }
@@ -679,29 +662,29 @@ public class Game {
         Employee programmer = company.getProgrammers().get(selectedNum - 1);
 
         // MENU: PROJECT SELECTION LEVEL
-        console.menuProjectsCurrent(company.getProjects());
+        console.menuProjectsCurrent(company.projects);
         console.actionMessage("Select a number of a project you want programmer to focus on");
 
         do {
             key = Tool.getKey();
             if (key == '0') return;
             selectedNum = Character.getNumericValue(key);
-        } while (selectedNum < 1 || selectedNum > company.getProjects().size());
+        } while (selectedNum < 1 || selectedNum > company.projects.size());
 
-        Project project = company.getProjects().get(selectedNum - 1);
+        Project project = company.projects.get(selectedNum - 1);
 
         // PROCESS CHOICES
 
         if (project.isProgrammerAssigned(programmer)) {
             console.info("Programmer " + programmer.getName() + " already works on "
-                + project.getName() + " project.");
+                + project.name + " project.");
             return;
         }
 
         company.removeProgrammerFromAnyProjects(programmer);
         project.addProgrammer(programmer);
         console.info("Programmer, " + programmer.getName() + " has been assigned to work on "
-            + project.getName() + " project.");
+            + project.name + " project.");
         advanceNextDay();
     }
 
@@ -716,7 +699,7 @@ public class Game {
                 case '2': console.menuPaymentsApproved(company); return;
                 case '3': console.menuIncome(company.getTransactionsInPayed()); return;
                 case '4':
-                    if (!company.hasOffice()) {
+                    if (!company.hasOffice) {
                         optionCompanyTaskRentOffice();
                         advanceNextDay();
                         return;
@@ -744,7 +727,7 @@ public class Game {
             // approve all transactions
             case "all":
                 for(Transaction tr:company.getUnapprovedTransactions())
-                    tr.setAsApproved();
+                    tr.isApproved = true;
                 console.info("You approved all pending transactions.");
                 advanceNextDay();
                 return;
@@ -782,8 +765,8 @@ public class Game {
 
 
     private void optionCompanyTaskRentOffice(){
-        company.setOfficeRentMonthlyPayDayNumber(currentDate.getDayOfMonth());
-        company.setHasOffice(true);
+        company.officeRentMonthlyPayDayNumber = currentDate.getDayOfMonth();
+        company.hasOffice = true;
         console.info("You rented office for your company.");
     }
 
@@ -830,7 +813,7 @@ public class Game {
         // PEOPLE WORK
 
         // set sickness state for employees
-        for(Employee employee:company.getEmployees())
+        for(Employee employee:company.employees)
             employee.setSickness();
 
         // contractors and employees don't work during weekends
@@ -861,7 +844,7 @@ public class Game {
 
         // rent for office
         if (currentDate.getDayOfMonth() == company.getOfficeRentMonthlyPayDayNumber())
-            company.addTransactionOut(new Transaction(
+            company.transactionsOut.add(new Transaction(
                     Conf.OFFICE_MONTHLY_COST,
                     currentDate.plusDays(Conf.OFFICE_RENT_PAY_AFTER_DAYS),
                     "Office rent " + currentDate.getYear() + "/" + currentDate.getMonthValue()
@@ -882,11 +865,11 @@ public class Game {
         List<Transaction> unpaidSalaries = company.getUnpaidSalaries(currentDate);
         if (currentDate.getDayOfMonth() == 25 && unpaidSalaries.size() > 0)
             for(Transaction tr:unpaidSalaries){
-                company.processEmployeeCurrentMonthPayment(tr.getEmployee(), currentDate);
+                company.processEmployeeCurrentMonthPayment(tr.employee, currentDate);
                 company.processEmployeesCosts();
-                company.removeEmployee(tr.getEmployee());
+                company.employees.remove(tr.employee);
                 console.info(
-                        tr.getEmployee().getEmployeeRole() + ", " + tr.getEmployee().getName() +
+                        tr.employee.role + ", " + tr.employee.getName() +
                             " has not received salary for previous month and decided to leave the company."
                 );
             }
@@ -903,7 +886,7 @@ public class Game {
         // LOOSING CONDITIONS
 
         // game over if money below 0
-        if (company.getMoney() < 0.0){
+        if (company.money < 0.0){
             console.info("YOU LOST! Your company has no money to function properly.");
             console.gameOver();
             System.exit(0);
@@ -923,7 +906,7 @@ public class Game {
         // WINNING CONDITIONS
 
         if (company.countWinningProjects() >= Conf.VALID_PROJECTS_TO_WIN_COUNT)
-            if (company.getMoney() > Conf.START_MONEY){
+            if (company.money > Conf.START_MONEY){
                 console.info("YOU WON! Your company completed and got paid for three big projects, and has more money than at the beginning. Good work!");
                 console.gameOver();
                 System.exit(0);

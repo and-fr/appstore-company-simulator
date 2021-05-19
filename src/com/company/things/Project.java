@@ -14,85 +14,49 @@ import java.util.*;
 
 public class Project {
 
-    private final Client client;
-    private final String name;
-    private final List<Technology> technologies;
-    private final Integer paymentDelayDays;
-    private final Boolean isPaymentNever;
-    private final Boolean isPenaltyAvoidedWithinWeekOfDelay;
-    private final Boolean isProblemFromNotWorkingProject;
-    private Boolean isPlayerInvolved;
-    private LocalDate startDate;
-    private final Integer totalWorkDaysNeeded;
-    private Employee seller;
-    private Employee tester;
-    private final List<Employee> programmers;
+    public final Client client;
+    public final String name = generateProjectName();
+    public final List<Technology> technologies = generateTechnologies();
+    public final Integer paymentDelayDays;
+    public final Boolean isPaymentNever;
+    public final Boolean isPenaltyAvoidedWithinWeekOfDelay;
+    public final Boolean isProblemFromNotWorkingProject;
+    public final Integer totalWorkDaysNeeded;
     private final Double price;
-    private Double priceBonus;
-    private Transaction transaction;
-    private final Double paymentAdvance;
+    public final Double paymentAdvance;
+    public Boolean isPlayerInvolved = false;
+    public LocalDate startDate;
+    public Employee seller = null;
+    public Employee tester = null;
+    public final List<Employee> programmers = new ArrayList<>();
+    public Double priceBonus = 0.0;
+    public Transaction transaction = null;
 
 
     public Project(Client client){
         this.client = client;
-        name = generateProjectName();
-        technologies = generateTechnologies();
         totalWorkDaysNeeded = calculateTotalWorkDaysNeeded();
         paymentDelayDays = calculatePaymentDelayDays();
         isPaymentNever = calculatePaymentNever();
         isPenaltyAvoidedWithinWeekOfDelay = calculatePenaltyAvoidedWithinWeekOfDelay();
         isProblemFromNotWorkingProject = calculateProblemFromNotWorkingProject();
-        seller = null;
-        tester = null;
-        programmers = new ArrayList<>();
-        isPlayerInvolved = false;
         price = generatePrice();
-        priceBonus = 0.0;
-        transaction = null;
         paymentAdvance = calculatePaymentAdvance();
     }
 
 
-    public Client getClient() { return client; }
-    public Employee getSeller() { return seller; }
-    public Employee getTester() { return tester; }
-    public List<Employee> getProgrammers() { return programmers; }
-    public String getName() { return name; }
-    public List<Technology> getTechnologies(){ return technologies; }
-    public Integer getPaymentDelayDays() { return paymentDelayDays; }
-    public Boolean isPaymentNever() { return isPaymentNever; }
-    public Boolean isProblemFromNotWorkingProject() { return isProblemFromNotWorkingProject; }
-    public Boolean isPenaltyAvoidedWithinWeekOfDelay() { return isPenaltyAvoidedWithinWeekOfDelay; }
-    public Integer getTotalWorkDaysNeeded() { return totalWorkDaysNeeded; }
     public Boolean isNegotiatedBySeller() { return seller != null; }
-    public Boolean isPlayerInvolved() { return isPlayerInvolved; }
-    public Transaction getTransaction() { return transaction; }
-    public Double getPaymentAdvance() { return paymentAdvance; }
     public Double getPrice() { return price + priceBonus; }
-    public Double getPriceBonus() { return priceBonus; }
     public LocalDate getDeadline() { return startDate.plusDays((long)totalWorkDaysNeeded); }
-    public Boolean isTesterAssigned() {
-        return tester != null;
-    }
+    public Boolean isTesterAssigned() { return tester != null; }
     public Integer getCodeCompletionPercent(){ return (int) (((double)getCodeDaysDone() / (double)getCodeDaysNeeded()) * 100.0); }
     public Integer getTestCompletionPercent(){ return (int) (((double)getTestDaysDone() / (double)getCodeDaysNeeded()) * 100.0); }
-    public Integer getCompletionPercent(){
-        return (getCodeCompletionPercent() + getTestCompletionPercent()) / 2;
-    }
-    public Integer getDaysOfDelay(LocalDate gameDate) {
-        return (int) ChronoUnit.DAYS.between(getDeadline(), gameDate);
-    }
+    public Integer getCompletionPercent(){ return (getCodeCompletionPercent() + getTestCompletionPercent()) / 2; }
+    public Integer getDaysOfDelay(LocalDate gameDate) { return (int) ChronoUnit.DAYS.between(getDeadline(), gameDate); }
 
 
     public void addProgrammer(Employee programmer) { programmers.add(programmer); }
-    public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
-    public void setSeller(Employee seller) { this.seller = seller; }
-    public void setTester(Employee tester) { this.tester = tester; }
-    public void setPlayerAsInvolved() { isPlayerInvolved = true; }
-    public void removeTester() { tester = null; }
     public void removeProgrammer(Employee programmer) { programmers.remove(programmer); }
-    public void setTransaction(Transaction transaction) { this.transaction = transaction; }
-    public void removeAllProgrammers() { programmers.clear(); }
 
 
     public Double generatePrice(){
@@ -114,7 +78,7 @@ public class Project {
     public Integer getCodeDaysNeeded(){
         int days = 0;
         for (Technology tech:technologies)
-            days += tech.getCodeDaysNeeded();
+            days += tech.codeDaysNeeded;
         return days;
     }
 
@@ -122,7 +86,7 @@ public class Project {
     public Integer getCodeDaysDone(){
         int days = 0;
         for (Technology tech:technologies)
-            days += tech.getCodeDaysDone();
+            days += tech.codeDaysDone;
         return days;
     }
 
@@ -130,7 +94,7 @@ public class Project {
     public Integer getTestDaysDone(){
         int days = 0;
         for (Technology tech:technologies)
-            days += tech.getTestDaysDone();
+            days += tech.testDaysDone;
         return days;
     }
 
@@ -156,9 +120,9 @@ public class Project {
 
     public Boolean isFinished(){
         for (Technology tech:technologies){
-            if (tech.getCodeDaysDone() < tech.getCodeDaysNeeded())
+            if (tech.codeDaysDone < tech.codeDaysNeeded)
                 return false;
-            if (tech.getTestDaysDone() < tech.getCodeDaysNeeded())
+            if (tech.testDaysDone < tech.codeDaysNeeded)
                 return false;
         }
         return true;
@@ -175,7 +139,7 @@ public class Project {
 
     public Boolean hasTech(String name){
         for(Technology tech:technologies)
-            if (tech.getName().equals(name))
+            if (tech.name.equals(name))
                 return true;
         return false;
     }
@@ -183,7 +147,7 @@ public class Project {
 
     public Technology getTechWithName(String name){
         for(Technology technology:technologies)
-            if (technology.getName().equals(name))
+            if (technology.name.equals(name))
                 return technology;
         return null;
     }
@@ -209,12 +173,12 @@ public class Project {
         int delay = 0;
 
         // payment delay depends on the client's personal traits (chances)
-        if (client.getPaymentDelayWeekChance() > 0)
-            if (Tool.randInt(1,100) <= client.getPaymentDelayWeekChance())
+        if (client.paymentDelayWeekChance > 0)
+            if (Tool.randInt(1,100) <= client.paymentDelayWeekChance)
                 delay += 7;
 
-        if (client.getPaymentDelayMonthChance() > 0)
-            if (Tool.randInt(1,100) <= client.getPaymentDelayMonthChance())
+        if (client.paymentDelayMonthChance > 0)
+            if (Tool.randInt(1,100) <= client.paymentDelayMonthChance)
                 delay += 30;
 
         return delay;
@@ -224,24 +188,24 @@ public class Project {
     private Boolean calculatePaymentNever(){
         // client will never pay for the project
         // this chance depends on client's trait and its calculation for each and every project separately
-        if (client.getPaymentNeverChance() > 0)
-            return Tool.randInt(1, 100) <= client.getPaymentNeverChance();
+        if (client.paymentNeverChance > 0)
+            return Tool.randInt(1, 100) <= client.paymentNeverChance;
         return false;
     }
 
 
     private Boolean calculatePenaltyAvoidedWithinWeekOfDelay(){
         // chance to avoid penalty if project will be delayed by no more than one week
-        if (client.getDelayWeekPenaltyAvoidChance() > 0)
-            return Tool.randInt(1,100) <= client.getDelayWeekPenaltyAvoidChance();
+        if (client.delayWeekPenaltyAvoidChance > 0)
+            return Tool.randInt(1,100) <= client.delayWeekPenaltyAvoidChance;
         return false;
     }
 
 
     private Boolean calculateProblemFromNotWorkingProject(){
         // chance to avoid problems (e.g. canceling the contract) when you deliver unfinished project to client
-        if (client.getProblemsFromNotWorkingProjectChance() > 0)
-            return Tool.randInt(1,100) <= client.getProblemsFromNotWorkingProjectChance();
+        if (client.problemsFromNotWorkingProjectChance > 0)
+            return Tool.randInt(1,100) <= client.problemsFromNotWorkingProjectChance;
         return false;
     }
 
@@ -262,7 +226,7 @@ public class Project {
         // for 1 tech: codeDaysNeeded * 2
         if (numTechs == 1){
             for (Technology tech:technologies)
-                days += tech.getCodeDaysNeeded();
+                days += tech.codeDaysNeeded;
             days *= 2;
         }
 
@@ -271,9 +235,9 @@ public class Project {
         // + random number between days of tech with max days and that sum
         if (numTechs > 1) {
             for (Technology tech:technologies) {
-                days += tech.getCodeDaysNeeded();
-                if (maxDaysOfTech < tech.getCodeDaysNeeded())
-                    maxDaysOfTech = tech.getCodeDaysNeeded();
+                days += tech.codeDaysNeeded;
+                if (maxDaysOfTech < tech.codeDaysNeeded)
+                    maxDaysOfTech = tech.codeDaysNeeded;
             }
             days += Tool.randInt(maxDaysOfTech, days);
         }
@@ -286,7 +250,7 @@ public class Project {
         // if seller found a project, the seller is able to negotiate a better price for it
         if (seller != null){
             int min = 0;
-            int max = new BigDecimal(String.valueOf(seller.getPayForHourBonus())).intValue();
+            int max = new BigDecimal(String.valueOf(seller.payForHourBonus)).intValue();
             int percent = Tool.randInt(min, max);
             int priceOfOnePercent = (int) (price / 100.0);
             priceBonus += (double) (priceOfOnePercent * percent);

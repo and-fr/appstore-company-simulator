@@ -24,7 +24,7 @@ public class Conf {
     public static final Double PAY_FOR_HOUR_EMPLOYEE_PROGRAMMER = 15.0;
     public static final Double PAY_FOR_HOUR_EMPLOYEE_PROGRAMMER_TECH_BONUS = 5.0;
     public static final Double PRICE_PENALTY_MULTIPLIER = 0.1;
-    public static final Double START_MONEY = 2000000.0;
+    public static final Double START_MONEY = 50000.0;
 
 
     // INTEGERS

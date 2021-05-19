@@ -7,26 +7,19 @@ import com.company.people.Contractor;
 
 public class Technology {
 
-    private final String name;
-    private final Integer codeDaysNeeded;
-    private Integer codeDaysDone;
-    private Integer testDaysDone;
-    private Contractor contractor;
-    private Integer contractorCodeDays;
-    private Integer contractorTestDays;
-    private Integer contractorTestFailureDays;
-    private Boolean isContractorWorkFinished;
+    public final String name;
+    public final Integer codeDaysNeeded;
+    public Integer codeDaysDone = 0;
+    public Integer testDaysDone = 0;
+    public Contractor contractor = null;
+    public Integer contractorCodeDays = 0;
+    public Integer contractorTestDays = 0;
+    public Integer contractorTestFailureDays = 0;
+    public Boolean isContractorWorkFinished = false;
 
 
     public Technology(String name){
         this.name = name;
-        codeDaysDone = 0;
-        testDaysDone = 0;
-        contractor = null;
-        contractorCodeDays = 0;
-        contractorTestDays = 0;
-        contractorTestFailureDays = 0;
-        isContractorWorkFinished = false;
 
         switch (this.name){
             case "Front-End":
@@ -53,35 +46,11 @@ public class Technology {
     }
 
 
-    public String getName(){
-        return name;
-    }
-    public Integer getCodeDaysNeeded() {
-        return codeDaysNeeded;
-    }
-    public Integer getCodeDaysDone() {
-        return codeDaysDone;
-    }
-    public Integer getTestDaysDone() { return testDaysDone; }
-    public Contractor getContractor() { return contractor; }
-    public Integer getContractorTestDays() { return contractorTestDays; }
-    public Integer getContractorTestFailureDays() { return contractorTestFailureDays; }
     public Boolean isContractorAssigned() { return contractor != null; }
-    public Boolean isContractorWorkFinished() { return isContractorWorkFinished; }
     public Boolean isCodeCompleted() { return codeDaysDone >= codeDaysNeeded; }
     public Boolean isFinished() { return (codeDaysDone >= codeDaysNeeded) && (testDaysDone >= codeDaysNeeded); }
-    public Double getContractorCost() { return (double) (contractorCodeDays + contractorTestDays) * 8.0 * contractor.getPayForHour(); }
+    public Double getContractorCost() { return (double) (contractorCodeDays + contractorTestDays) * 8.0 * contractor.payForHour; }
     public Integer getContractorWorkDays() { return contractorCodeDays + contractorTestDays; }
-
-
-    public void removeContractor() { contractor = null; }
-    public void setCodeDaysDonePlus(int days){ codeDaysDone += days; }
-    public void setContractor(Contractor contractor) { this.contractor = contractor; }
-    public void setContractorCodeDaysPlus(int days){ this.contractorCodeDays += days; }
-    public void setContractorTestDaysPlus(int days){ this.contractorTestDays += days; }
-    public void setContractorTestFailureDaysPlus(int days){ this.contractorTestFailureDays += days; }
-    public void setIsContractorWorkFinished(boolean isFinished) { this.isContractorWorkFinished = isFinished; }
-    public void setTestDaysDonePlus(int days){ if (testDaysDone < codeDaysDone) testDaysDone += days; }
 
 
     public String setLuckyTestDayForPlayer(){
@@ -90,8 +59,10 @@ public class Technology {
 
         String info = "";
         if (Tool.randInt(1, 100) <= Conf.PLAYER_LUCKY_TEST_DAY_CHANCE_PERCENT){
-            setTestDaysDonePlus(1);
-            info = "You had your LUCKY programming day. Your code was so good that one free test day was added.";
+            if (testDaysDone < codeDaysDone) {
+                testDaysDone += 1;
+                info = "You had your LUCKY programming day. Your code was so good that one free test day was added.";
+            }
         }
         return info;
     }

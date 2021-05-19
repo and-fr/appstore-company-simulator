@@ -11,24 +11,17 @@ import java.util.List;
 
 public class Contractor extends Person{
 
-    private final Double payForHour;
-    private final Boolean finishOnTime;
-    private final Boolean noErrors;
-    private final List<String> skills;
+    public final Double payForHour;
+    public final Boolean finishOnTime;
+    public final Boolean noErrors;
+    public final List<String> skills = generateSkills();
 
 
     public Contractor(Double payForHour, Boolean finishOnTime, Boolean noErrors) {
         this.payForHour = payForHour;
         this.finishOnTime = finishOnTime;
         this.noErrors = noErrors;
-        skills = generateSkills();
     }
-
-
-    public Double getPayForHour() { return payForHour; }
-    public Boolean isFinishOnTime() { return finishOnTime; }
-    public Boolean isNoErrors() { return noErrors; }
-    public List<String> getSkills() { return skills; }
 
 
     private List<String> generateSkills(){

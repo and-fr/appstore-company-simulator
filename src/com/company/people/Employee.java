@@ -14,54 +14,36 @@ import java.util.List;
 
 public class Employee extends Person{
 
-    private final String role;
-    private LocalDate hireDate;
-    private Integer searchDaysForClients;
+    public final String role = generateEmployeeRole();
+    public LocalDate hireDate;
+    public Integer searchDaysForClients;
     private final Double payForHourBase;
-    private final Double payForHourBonus;
-    private List<String> skills;
-    private Integer skipDayPercentChance;
-    private Integer sickDays;
-    private final Console console;
+    public final Double payForHourBonus;
+    public List<String> skills;
+    public Integer skipDayPercentChance;
+    public Integer sickDays = 0;
+    private final Console console = new Console();
 
 
     public Employee(){
-        role = generateEmployeeRole();
-
         if (isSeller()) searchDaysForClients = 0;
         if (isProgrammer()) {
             skills = generateSkills();
             skipDayPercentChance = Tool.randInt(0, Conf.PROGRAMMER_SKIP_DAY_MAX_PERCENT_CHANCE);
         }
-
         payForHourBase = generatePayForHourBase();
         payForHourBonus = generatePayForHourBonus();
-        sickDays = 0;
-
-        console = new Console();
     }
 
 
     public Boolean isProgrammer() { return role.equals("Programmer"); }
     public Boolean isSeller() { return role.equals("Seller"); }
     public Boolean isTester() { return role.equals("Tester"); }
-    public LocalDate getHireDate() { return hireDate; }
-    public Integer getSearchDaysForClients() { return searchDaysForClients; }
-    public String getEmployeeRole() { return role; }
-    public  List<String> getSkills() { return skills; }
-    public Integer getSkipDayPercentChance() { return skipDayPercentChance; }
-    public Double getPayForHourBonus() { return payForHourBonus; }
     public Double getPayForHour() { return payForHourBase + payForHourBonus; }
     public Double getMonthlySalary() {
         return (payForHourBase + payForHourBonus) * 8.0 * 30.0;
     }
     public Boolean isSick() { return sickDays > 0; }
-    public Integer getSickDays() { return sickDays; }
-
-
-    public void setHireDate(LocalDate hireDate) { this.hireDate = hireDate; }
-    public void setSearchDaysForClientsPlus(int days) { searchDaysForClients += days; }
-    public void resetSearchDays() { searchDaysForClients = 0; }
 
 
     private String generateEmployeeRole(){

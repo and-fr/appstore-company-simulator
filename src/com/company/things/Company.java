@@ -14,44 +14,14 @@ import java.util.List;
 
 public class Company {
 
-    private Double money;
-    private Boolean hasOffice;
-    private Integer officeRentMonthlyPayDayNumber;
-    private final List<Project> projects;
-    private final List<Project> returnedProjects;
-    private final List<Employee> employees;
-    private final List<Transaction> transactionsIn;
-    private final List<Transaction> transactionsOut;
-
-
-    public Company(){
-        money = Conf.START_MONEY;
-        hasOffice = Conf.START_COMPANY_HAS_OFFICE;
-        officeRentMonthlyPayDayNumber = 0;
-        projects = new ArrayList<>();
-        returnedProjects = new ArrayList<>();
-        employees = new ArrayList<>();
-        transactionsIn = new ArrayList<>();
-        transactionsOut = new ArrayList<>();
-    }
-
-
-    public Double getMoney() { return money; }
-    public Boolean hasOffice() { return hasOffice; }
-    public List<Project> getProjects(){ return projects; }
-    public List<Employee> getEmployees(){ return employees; }
-
-
-    public void addProject(Project project){ projects.add(project); }
-    public void removeProject(Project project){ projects.remove(project); }
-    public void addToReturnedProjects(Project project){ returnedProjects.add(project); }
-    public void addEmployee(Employee employee){ employees.add(employee); }
-    public void setHasOffice(Boolean hasOffice) { this.hasOffice = hasOffice; }
-    public void addTransactionIn(Transaction transaction) { this.transactionsIn.add(transaction); }
-    public void addTransactionOut(Transaction transaction) { this.transactionsOut.add(transaction); }
-    public void removeMoney(double money) { this.money -= money; }
-    public void removeEmployee(Employee employee) { employees.remove(employee); }
-    public void setOfficeRentMonthlyPayDayNumber(int day) { officeRentMonthlyPayDayNumber = day; }
+    public Double money = Conf.START_MONEY;
+    public Boolean hasOffice = Conf.START_COMPANY_HAS_OFFICE;
+    public Integer officeRentMonthlyPayDayNumber = 0;
+    public final List<Project> projects = new ArrayList<>();
+    public final List<Project> returnedProjects = new ArrayList<>();
+    public final List<Employee> employees = new ArrayList<>();
+    public final List<Transaction> transactionsIn = new ArrayList<>();
+    public final List<Transaction> transactionsOut = new ArrayList<>();
 
 
     public Integer getOfficeRentMonthlyPayDayNumber() {
@@ -98,7 +68,7 @@ public class Company {
     private List<Project> getProjectsWithProgrammers(){
         List<Project> projects = new ArrayList<>();
         for (Project project:this.projects)
-            if (project.getProgrammers().size() > 0)
+            if (project.programmers.size() > 0)
                 projects.add(project);
         return projects;
     }
@@ -106,16 +76,16 @@ public class Company {
 
     public Project getProjectTesterIsAssignedTo(Employee tester){
         for(Project project:projects)
-            if (project.getTester() != null)
-                if (project.getTester().equals(tester)) return project;
+            if (project.tester != null)
+                if (project.tester.equals(tester)) return project;
         return null;
     }
 
 
     public Project getProjectProgrammerIsAssignedTo(Employee programmer){
         for(Project project:projects)
-            if (project.getProgrammers().size() > 0)
-                for(Employee employee:project.getProgrammers())
+            if (project.programmers.size() > 0)
+                for(Employee employee:project.programmers)
                     if (employee.equals(programmer)) return project;
         return null;
     }
@@ -124,7 +94,7 @@ public class Company {
     public List<Transaction> getUnapprovedTransactions(){
         List<Transaction> transactions = new ArrayList<>();
         for(Transaction transaction:transactionsOut)
-            if (!transaction.isApproved()) transactions.add(transaction);
+            if (!transaction.isApproved) transactions.add(transaction);
         return transactions;
     }
 
@@ -132,22 +102,22 @@ public class Company {
     public List<Transaction> getApprovedTransactions(){
         List<Transaction> transactions = new ArrayList<>();
         for(Transaction transaction:transactionsOut)
-            if (transaction.isApproved() && !transaction.isPayed()) transactions.add(transaction);
+            if (transaction.isApproved && !transaction.isPayed) transactions.add(transaction);
         return transactions;
     }
 
 
     public void removeTesterFromAnyProjects(Employee tester){
         for(Project project:projects)
-            if (project.getTester() != null)
-                if (project.getTester().equals(tester))
-                    project.removeTester();
+            if (project.tester != null)
+                if (project.tester.equals(tester))
+                    project.tester = null;
     }
 
 
     public void removeProgrammerFromAnyProjects(Employee programmer){
         for(Project project:projects)
-            for(Employee employee:project.getProgrammers())
+            for(Employee employee:project.programmers)
                 if (employee.equals(programmer))
                     project.removeProgrammer(programmer);
     }
@@ -156,8 +126,8 @@ public class Company {
     public Integer getContractorsCount(){
         int count = 0;
         for (Project prj:projects)
-            for (Technology tech:prj.getTechnologies())
-                if (tech.getContractor() != null) count++;
+            for (Technology tech:prj.technologies)
+                if (tech.contractor != null) count++;
         return count;
     }
 
@@ -167,56 +137,56 @@ public class Company {
         StringBuilder info = new StringBuilder();
 
         for (Project prj:projects)
-            for (Technology tech:prj.getTechnologies())
+            for (Technology tech:prj.technologies)
                 if (tech.isContractorAssigned()){
 
                     // PROGRAMMING
-                    if (tech.getCodeDaysDone() < tech.getCodeDaysNeeded()){
+                    if (tech.codeDaysDone < tech.codeDaysNeeded){
                         // for contractor who has a trait "not finishes on time"
                         // theres a chance that one of the days won't be productive and no code will be provided
-                        if (!tech.getContractor().isFinishOnTime())
+                        if (!tech.contractor.finishOnTime)
                             if (Tool.randInt(1,100) <= Conf.CONTRACTORS_CODE_DAY_FAILURE_CHANCE_PERCENT){
-                                info.append("Today, contractor ").append(tech.getContractor().getName());
-                                info.append(" hasn't provided any CODE on ").append(tech.getName()).append(" technology for ").append(prj.getName()).append(" project.\n");
+                                info.append("Today, contractor ").append(tech.contractor.getName());
+                                info.append(" hasn't provided any CODE on ").append(tech.name).append(" technology for ").append(prj.name).append(" project.\n");
                                 continue;
                             }
 
-                        tech.setCodeDaysDonePlus(1);
-                        tech.setContractorCodeDaysPlus(1);
-                        info.append("Contractor ").append(tech.getContractor().getName()).append(" worked with CODE on ").append(tech.getName()).append(" technology for ").append(prj.getName()).append(" project.\n");
+                        tech.codeDaysDone += 1;
+                        tech.contractorCodeDays += 1;
+                        info.append("Contractor ").append(tech.contractor.getName()).append(" worked with CODE on ").append(tech.name).append(" technology for ").append(prj.name).append(" project.\n");
                         continue;
                     }
 
                     // TESTS
-                    if (tech.getTestDaysDone() < tech.getCodeDaysDone()){
+                    if (tech.testDaysDone < tech.codeDaysDone){
 
                         // if sum of contactor test days and failure days equals total of code days needed for the project
                         // then it means the contractor won't work on that tech anymore and waits for a payment for the work done even when not complete
-                        if ((tech.getContractorTestDays() + tech.getContractorTestFailureDays()) >= tech.getCodeDaysNeeded()){
-                            info.append("Contractor ").append(tech.getContractor().getName());
-                            info.append(" has finished work for ").append(tech.getName()).append(" technology for ").append(prj.getName()).append(" project. Though tests are not fully complete for it.\n");
-                            tech.setIsContractorWorkFinished(true);
+                        if ((tech.contractorTestDays + tech.contractorTestFailureDays) >= tech.codeDaysNeeded){
+                            info.append("Contractor ").append(tech.contractor.getName());
+                            info.append(" has finished work for ").append(tech.name).append(" technology for ").append(prj.name).append(" project. Though tests are not fully complete for it.\n");
+                            tech.isContractorWorkFinished = true;
                             continue;
                         }
 
                         // if contractor has trait to not return working (tested) code in full
-                        if (!tech.getContractor().isNoErrors()){
+                        if (!tech.contractor.noErrors){
                             if (Tool.randInt(1,100) <= Conf.CONTRACTORS_TEST_DAY_FAILURE_CHANCE_PERCENT){
-                                tech.setContractorTestFailureDaysPlus(1);
-                                info.append("Today, contractor ").append(tech.getContractor().getName()).append(" hasn't provided any TESTS for ").append(tech.getName()).append(" technology for ").append(prj.getName()).append(" project.\n");
+                                tech.contractorTestFailureDays += 1;
+                                info.append("Today, contractor ").append(tech.contractor.getName()).append(" hasn't provided any TESTS for ").append(tech.name).append(" technology for ").append(prj.name).append(" project.\n");
                                 continue;
                             }
                         }
 
-                        tech.setTestDaysDonePlus(1);
-                        tech.setContractorTestDaysPlus(1);
-                        info.append("Contractor ").append(tech.getContractor().getName()).append(" worked with TESTS on ").append(tech.getName()).append(" technology for ").append(prj.getName()).append(" project.\n");
+                        tech.testDaysDone += 1;
+                        tech.contractorTestDays += 1;
+                        info.append("Contractor ").append(tech.contractor.getName()).append(" worked with TESTS on ").append(tech.name).append(" technology for ").append(prj.name).append(" project.\n");
                         continue;
                     }
 
                     // FINISHED CODE AND TESTS FOR TECH
-                    info.append("Work on the ").append(tech.getName()).append(" technology for ").append(prj.getName()).append(" project is finished. Contractor ").append(tech.getContractor().getName()).append(" won't work on this any further.\n");
-                    tech.setIsContractorWorkFinished(true);
+                    info.append("Work on the ").append(tech.name).append(" technology for ").append(prj.name).append(" project is finished. Contractor ").append(tech.contractor.getName()).append(" won't work on this any further.\n");
+                    tech.isContractorWorkFinished = true;
                 }
 
         return info.toString();
@@ -225,20 +195,20 @@ public class Company {
 
     public void processContractorsFinishedWork(LocalDate currentDate, List<Contractor> contractors){
         for (Project prj:projects)
-            for (Technology tech:prj.getTechnologies())
+            for (Technology tech:prj.technologies)
                 if (tech.isContractorAssigned()){
-                    if (tech.isContractorWorkFinished()) {
-                        Contractor contractor = tech.getContractor();
+                    if (tech.isContractorWorkFinished) {
+                        Contractor contractor = tech.contractor;
 
                         // prepare payment for contractor
-                        String description = "Payment for " + contractor.getName() + ". Tech: " + tech.getName()
-                                + ". Project: " + prj.getName() + ". Work days: " + tech.getContractorWorkDays() + ".";
+                        String description = "Payment for " + contractor.getName() + ". Tech: " + tech.name
+                                + ". Project: " + prj.name + ". Work days: " + tech.getContractorWorkDays() + ".";
                         transactionsOut.add(new Transaction(tech.getContractorCost(), currentDate.plusDays(Conf.CONTRACTORS_PAY_AFTER_DAYS), description));
 
                         // add contractor to available contractors global group
                         // and remove contractor from current tech
                         contractors.add(contractor);
-                        tech.removeContractor();
+                        tech.contractor = null;
                     }
                 }
     }
@@ -254,11 +224,11 @@ public class Company {
             if (seller.isSick())
                 break;
 
-            seller.setSearchDaysForClientsPlus(1);
-            if (seller.getSearchDaysForClients() >= 5){
-                seller.resetSearchDays();
+            seller.searchDaysForClients += 1;
+            if (seller.searchDaysForClients >= 5){
+                seller.searchDaysForClients = 0;
                 Project project = new Project(new Client());
-                project.setSeller(seller);
+                project.seller = seller;
                 project.negotiatePriceBonus();
                 if (projects.size() >= Conf.MAX_AVAILABLE_PROJECTS)
                     projects.remove(0);
@@ -279,19 +249,19 @@ public class Company {
 
             // if project is completed no tests are needed
             if (project.isFinished()) {
-                project.removeTester();
-                info.append("Project ").append(project.getName()).append(" is completed. Tester has been unassigned from it.");
+                project.tester = null;
+                info.append("Project ").append(project.name).append(" is completed. Tester has been unassigned from it.");
                 break;
             }
 
             // sick testers don't work
-            if (project.getTester().isSick())
+            if (project.tester.isSick())
                 break;
 
-            for (Technology technology:project.getTechnologies()){
-                if (technology.getTestDaysDone() < technology.getCodeDaysDone()){
-                    technology.setTestDaysDonePlus(1);
-                    info.append("Tester, ").append(project.getTester().getName()).append(" has worked on ").append(technology.getName()).append(" technology for ").append(project.getName()).append(" project.\n");
+            for (Technology technology:project.technologies){
+                if (technology.testDaysDone < technology.codeDaysDone){
+                    technology.testDaysDone += 1;
+                    info.append("Tester, ").append(project.tester.getName()).append(" has worked on ").append(technology.name).append(" technology for ").append(project.name).append(" project.\n");
                 } else
                     continue;
 
@@ -312,12 +282,12 @@ public class Company {
         Technology technology;
 
         for (Project project:getProjectsWithProgrammers())
-            for(Employee programmer:project.getProgrammers()) {
+            for(Employee programmer:project.programmers) {
 
                 // if project is completed no coding or tests are needed
                 if (project.isFinished()) {
-                    project.removeAllProgrammers();
-                    info.append("Project ").append(project.getName()).append(" is completed. All programmers have been unassigned from it.");
+                    project.programmers.clear();
+                    info.append("Project ").append(project.name).append(" is completed. All programmers have been unassigned from it.");
                     return info.toString();
                 }
 
@@ -325,7 +295,7 @@ public class Company {
                 if (programmer.isSick())
                     continue;
 
-                for (String skill : programmer.getSkills()) {
+                for (String skill : programmer.skills) {
                     if (project.hasTech(skill)) {
                         technology = project.getTechWithName(skill);
                         if (technology == null) break;
@@ -335,21 +305,21 @@ public class Company {
                             break;
 
                         // there is a chance programmer won't work at all this day
-                        if (programmer.getSkipDayPercentChance() > 0)
-                            if (Tool.randInt(1, 100) <= programmer.getSkipDayPercentChance()) {
+                        if (programmer.skipDayPercentChance > 0)
+                            if (Tool.randInt(1, 100) <= programmer.skipDayPercentChance) {
                                 info.append("Programmer, ").append(programmer.getName()).append(" has not provided any code or tests today.\n");
                                 break;
                             }
 
-                        if (technology.getCodeDaysDone() < technology.getCodeDaysNeeded()) {
-                            technology.setCodeDaysDonePlus(1);
-                            info.append("Programmer, ").append(programmer.getName()).append(" has CODED ").append(technology.getName()).append(" technology for ").append(project.getName()).append(" project.\n");
+                        if (technology.codeDaysDone < technology.codeDaysNeeded) {
+                            technology.codeDaysDone += 1;
+                            info.append("Programmer, ").append(programmer.getName()).append(" has CODED ").append(technology.name).append(" technology for ").append(project.name).append(" project.\n");
                             break;
                         }
 
-                        if (technology.getTestDaysDone() < technology.getCodeDaysDone()) {
-                            technology.setTestDaysDonePlus(1);
-                            info.append("Programmer, ").append(programmer.getName()).append(" has TESTED ").append(technology.getName()).append(" technology for ").append(project.getName()).append(" project.\n");
+                        if (technology.testDaysDone < technology.codeDaysDone) {
+                            technology.testDaysDone += 1;
+                            info.append("Programmer, ").append(programmer.getName()).append(" has TESTED ").append(technology.name).append(" technology for ").append(project.name).append(" project.\n");
                             break;
                         }
                     }
@@ -372,23 +342,23 @@ public class Company {
         for(Employee employee:employees){
 
             // for employees that were hired in current month payments are not processed
-            if (currentDate.getMonthValue() == employee.getHireDate().getMonthValue())
+            if (currentDate.getMonthValue() == employee.hireDate.getMonthValue())
                 break;
 
             // employee who was hired earlier than 20 days has full monthly salary
             // otherwise salary is calculated: pay4hour * 8.0 * number of days
-            employeeWorkDays = (int) ChronoUnit.DAYS.between(employee.getHireDate(), currentDate) + 1;
+            employeeWorkDays = (int) ChronoUnit.DAYS.between(employee.hireDate, currentDate) + 1;
 
             if (employeeWorkDays > 20)
                 salary = employee.getMonthlySalary();
             else
                 salary = employee.getPayForHour() * 8.0 * (double) employeeWorkDays;
 
-            desc = "Salary " + salaryYear + "/" + salaryMonth + " for " + employee.getName() + ", " + employee.getEmployeeRole();
+            desc = "Salary " + salaryYear + "/" + salaryMonth + " for " + employee.getName() + ", " + employee.role;
 
             Transaction transaction = new Transaction(salary, currentDate.plusDays(5), desc);
-            transaction.setAsSalary();
-            transaction.setEmployee(employee);
+            transaction.isSalary = true;
+            transaction.employee = employee;
             transactionsOut.add(transaction);
         }
     }
@@ -397,16 +367,16 @@ public class Company {
     public void processEmployeeCurrentMonthPayment(Employee employee, LocalDate currentDate){
         // calculate the number of days which need to be compensated
         int days = currentDate.getDayOfMonth();
-        if (employee.getHireDate().getYear() == currentDate.getYear() && employee.getHireDate().getMonthValue() == currentDate.getMonthValue())
-            days = currentDate.getDayOfMonth() - employee.getHireDate().getDayOfMonth();
+        if (employee.hireDate.getYear() == currentDate.getYear() && employee.hireDate.getMonthValue() == currentDate.getMonthValue())
+            days = currentDate.getDayOfMonth() - employee.hireDate.getDayOfMonth();
 
         Transaction tr = new Transaction(
                 days * 8.0 * employee.getPayForHour(),
                 currentDate.plusDays(7),
-                "Salary " + currentDate.getYear() + "/" + currentDate.getMonthValue() + " " + employee.getName() + ", " + employee.getEmployeeRole()
+                "Salary " + currentDate.getYear() + "/" + currentDate.getMonthValue() + " " + employee.getName() + ", " + employee.role
         );
-        tr.setAsSalary();
-        tr.setEmployee(employee);
+        tr.isSalary = true;
+        tr.employee = employee;
         transactionsOut.add(tr);
     }
 
@@ -415,17 +385,17 @@ public class Company {
         List<Transaction> trCosts = new ArrayList<>();
 
         for(Transaction tr:transactionsOut)
-            if(tr.isSalary() && !tr.isCostGenerated()){
+            if(tr.isSalary && !tr.isCostGenerated){
                 trCosts.add(new Transaction(
-                        (tr.getMoney() / 100.0) * Conf.EMPLOYEE_WORK_COST_PERCENT,
-                        tr.getProcessDate(),
-                        tr.getDescription() + " (COSTS)"
+                        (tr.money / 100.0) * Conf.EMPLOYEE_WORK_COST_PERCENT,
+                        tr.processDate,
+                        tr.description + " (COSTS)"
                 ));
-                tr.setAsCostGenerated();
+                tr.isCostGenerated = true;
             }
 
         for(Transaction trc:trCosts){
-            trc.setAsMandatoryCost();
+            trc.isMandatoryCost = true;
             transactionsOut.add(trc);
         }
     }
@@ -434,7 +404,7 @@ public class Company {
     public Integer countUnpaidCostsPastMonth(LocalDate currentDate){
         int count = 0;
         for(Transaction tr:transactionsOut)
-            if (tr.isMandatoryCost() && !tr.isApproved() && tr.getProcessDate().getMonthValue() < currentDate.getMonthValue())
+            if (tr.isMandatoryCost && !tr.isApproved && tr.processDate.getMonthValue() < currentDate.getMonthValue())
                 count++;
         return count;
     }
@@ -445,11 +415,11 @@ public class Company {
         StringBuilder info = new StringBuilder();
 
         for(Transaction tr:transactionsOut)
-            if (!tr.isPayed() && tr.isApproved())
-                if (tr.getProcessDate().equals(currentDate) || tr.getProcessDate().isBefore(currentDate)){
-                    money -= tr.getMoney();
-                    tr.setAsPayed();
-                    info.append("Transaction OUT: ").append(tr.getDescription()).append(" (").append(tr.getMoney()).append(")\n");
+            if (!tr.isPayed && tr.isApproved)
+                if (tr.processDate.equals(currentDate) || tr.processDate.isBefore(currentDate)){
+                    money -= tr.money;
+                    tr.isPayed = true;
+                    info.append("Transaction OUT: ").append(tr.description).append(" (").append(tr.money).append(")\n");
                 }
 
         return info.toString();
@@ -461,11 +431,11 @@ public class Company {
         StringBuilder info = new StringBuilder();
 
         for(Transaction tr:transactionsIn)
-            if (!tr.isPayed())
-                if (tr.getProcessDate().equals(currentDate) || tr.getProcessDate().isBefore(currentDate)){
-                    money += tr.getMoney();
-                    tr.setAsPayed();
-                    info.append("Transaction IN: ").append(tr.getDescription()).append(" (").append(tr.getMoney()).append(")\n");
+            if (!tr.isPayed)
+                if (tr.processDate.equals(currentDate) || tr.processDate.isBefore(currentDate)){
+                    money += tr.money;
+                    tr.isPayed = true;
+                    info.append("Transaction IN: ").append(tr.description).append(" (").append(tr.money).append(")\n");
                 }
 
         return info.toString();
@@ -475,7 +445,7 @@ public class Company {
     public List<Transaction> getTransactionsInPayed(){
         List<Transaction> transactions = new ArrayList<>();
         for(Transaction tr:transactionsIn)
-            if (tr.isPayed()) transactions.add(tr);
+            if (tr.isPayed) transactions.add(tr);
         return transactions;
     }
 
@@ -485,9 +455,9 @@ public class Company {
         // and haven't been payed, thus those employees will be leaving the company
         List<Transaction> unpaidSalaries = new ArrayList<>();
         for(Transaction tr:transactionsOut){
-            if (!tr.isSalary()) continue;
-            if (tr.isApproved()) continue;
-            if (tr.getProcessDate().getYear() == currentDate.minusMonths(1).getYear() && tr.getProcessDate().getMonthValue() == currentDate.minusMonths(1).getMonthValue())
+            if (!tr.isSalary) continue;
+            if (tr.isApproved) continue;
+            if (tr.processDate.getYear() == currentDate.minusMonths(1).getYear() && tr.processDate.getMonthValue() == currentDate.minusMonths(1).getMonthValue())
                 unpaidSalaries.add(tr);
         }
         return unpaidSalaries;
@@ -499,8 +469,8 @@ public class Company {
         double taxes;
         double incomePreviousMonth = 0.0;
         for(Transaction tr:getTransactionsInPayed())
-            if (tr.getProcessDate().getYear() == previousMonth.getYear() && tr.getProcessDate().getMonthValue() == previousMonth.getMonthValue())
-                incomePreviousMonth += tr.getMoney();
+            if (tr.processDate.getYear() == previousMonth.getYear() && tr.processDate.getMonthValue() == previousMonth.getMonthValue())
+                incomePreviousMonth += tr.money;
         taxes = incomePreviousMonth / Conf.TAX_FROM_INCOME_MONTHLY_PERCENT;
 
         if (taxes > 0.0){
@@ -509,7 +479,7 @@ public class Company {
                     currentDate,
                     "Taxes for " + previousMonth.getYear() + "/" + previousMonth.getMonthValue()
             );
-            tr.setAsMandatoryCost();
+            tr.isMandatoryCost = true;
             transactionsOut.add(tr);
         }
     }
@@ -518,11 +488,11 @@ public class Company {
     public void processReturnedProjectsPayments(){
         for(Project project:returnedProjects){
 
-            if (project.getTransaction() == null) continue;
-            if (project.getTransaction().isPayed()) continue;
-            if (transactionsIn.contains(project.getTransaction())) continue;
+            if (project.transaction == null) continue;
+            if (project.transaction.isPayed) continue;
+            if (transactionsIn.contains(project.transaction)) continue;
 
-            transactionsIn.add(project.getTransaction());
+            transactionsIn.add(project.transaction);
         }
     }
 
@@ -532,10 +502,10 @@ public class Company {
         // where player was not involved in coding or testing
         List<Project> projects = new ArrayList<>();
         for(Project project:returnedProjects) {
-            if (project.getTechnologies().size() < Conf.VALID_PROJECTS_TO_WIN_MIN_TECHS) continue;
-            if (project.isPlayerInvolved()) continue;
-            if (project.getTransaction() == null) continue;
-            if (project.getTransaction().isPayed())
+            if (project.technologies.size() < Conf.VALID_PROJECTS_TO_WIN_MIN_TECHS) continue;
+            if (project.isPlayerInvolved) continue;
+            if (project.transaction == null) continue;
+            if (project.transaction.isPayed)
                 projects.add(project);
         }
         return projects;
@@ -547,8 +517,8 @@ public class Company {
         // there must be at least one valid complex project negotiated by a seller
         List<Project> projects = new ArrayList<>();
         for(Project project:getValidComplexProjectsPayed()) {
-            if (project.getTransaction() == null) continue;
-            if (project.getTransaction().isPayed())
+            if (project.transaction == null) continue;
+            if (project.transaction.isPayed)
                 projects.add(project);
         }
         return projects;
