@@ -4,7 +4,7 @@ This is a ***console game written in Java***. It's turn based simulation of mana
 
 
 ## More detailed description
-You start the game with some amount of money. Your company has no workers, no office, and no clients. You can programm in Java, have some knowledge about databases and are able to create a front-end interfaces. However you know nothing how to create mobile applications. You need to delegate such tasks to someone else, either contractor or employee. Or you can just dismiss those projects. Your other skills include installing and configuring Wordpress pages and simple e-commerce soultions based on Prestashop.
+You start the game with some amount of money. Your company has no workers, no office, and no clients. You can program in Java, have some knowledge of databases and you are able to create front-end interfaces. However you know nothing how to create mobile applications. You need to delegate such tasks to someone else, either contractor or employee. Or you can just dismiss those projects. Your other skills include installing and configuring Wordpress pages and simple e-commerce soultions based on Prestashop.
 
 At the begining of the game you have an option to start working on one of three available projects. Projects are simple, average, or complex. Without employees you can only do simple and average projects yourself.
 
